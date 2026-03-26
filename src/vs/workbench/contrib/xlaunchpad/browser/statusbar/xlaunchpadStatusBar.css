@@ -3,17 +3,39 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+/* Status bar offset: hide background under sidebar/activitybar */
+.monaco-workbench .part.statusbar.xlaunchpad-statusbar-offset {
+	padding-left: var(--xlaunchpad-statusbar-offset, 0px);
+}
+
+/* Render background only in the content area (after sidebar offset) */
+.monaco-workbench .part.statusbar.xlaunchpad-statusbar-offset::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: var(--xlaunchpad-statusbar-offset, 0px);
+	right: 0;
+	bottom: 0;
+	background-color: var(--xlaunchpad-statusbar-bg, transparent);
+	z-index: -1;
+}
+
+.monaco-workbench .part.statusbar.xlaunchpad-statusbar-offset:not(:focus).status-border-top::after {
+	left: var(--xlaunchpad-statusbar-offset, 0px);
+	width: calc(100% - var(--xlaunchpad-statusbar-offset, 0px));
+}
+
 .claude-session-popup {
 	position: fixed;
 	z-index: 2700;
 	min-width: 220px;
-	background: var(--vscode-menu-background, var(--vscode-editorWidget-background));
-	border: 1px solid var(--vscode-menu-border, var(--vscode-editorWidget-border));
+	background: #252526;
+	border: 1px solid #454545;
 	border-radius: 6px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 	padding: 4px 0;
 	font-size: 13px;
-	color: var(--vscode-menu-foreground, var(--vscode-foreground));
+	color: #cccccc;
 }
 
 .claude-session-popup-item {
@@ -26,8 +48,8 @@
 }
 
 .claude-session-popup-item:hover {
-	background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
-	color: var(--vscode-menu-selectionForeground, var(--vscode-foreground));
+	background: #094771;
+	color: #ffffff;
 }
 
 .claude-session-popup-item-dot {
@@ -53,7 +75,7 @@
 	height: 20px;
 	border: none;
 	background: transparent;
-	color: var(--vscode-foreground);
+	color: #cccccc;
 	border-radius: 4px;
 	cursor: pointer;
 	font-size: 14px;
@@ -72,7 +94,7 @@
 
 .claude-session-popup-separator {
 	height: 1px;
-	background: var(--vscode-editorWidget-border);
+	background: #454545;
 	margin: 4px 8px;
 }
 
@@ -82,13 +104,13 @@
 	padding: 6px 12px;
 	cursor: pointer;
 	gap: 8px;
-	color: var(--vscode-menu-foreground, var(--vscode-foreground));
+	color: #cccccc;
 	opacity: 0.8;
 }
 
 .claude-session-popup-action:hover {
-	background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
-	color: var(--vscode-menu-selectionForeground, var(--vscode-foreground));
+	background: #094771;
+	color: #ffffff;
 	opacity: 1;
 }
 
@@ -100,5 +122,5 @@
 }
 
 .claude-session-popup-action.destructive:hover {
-	color: var(--vscode-errorForeground);
+	color: #f48771;
 }
