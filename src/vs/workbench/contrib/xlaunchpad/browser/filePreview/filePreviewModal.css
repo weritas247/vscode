@@ -1,0 +1,420 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* ─── File Preview Header ─── */
+.xlaunchpad-file-preview-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 12px;
+	height: 32px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	flex-shrink: 0;
+	font-size: 12px;
+}
+
+.xlaunchpad-file-preview-path {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--vscode-descriptionForeground);
+	cursor: pointer;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: 11px;
+}
+
+.xlaunchpad-file-preview-path:hover {
+	color: var(--vscode-foreground);
+}
+
+.xlaunchpad-file-preview-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.xlaunchpad-file-preview-btn {
+	font-size: 11px;
+	padding: 2px 8px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	background: color-mix(in srgb, var(--vscode-foreground) 10%, transparent);
+	color: var(--vscode-descriptionForeground);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+	line-height: 1.4;
+}
+
+.xlaunchpad-file-preview-btn:hover {
+	background: color-mix(in srgb, var(--vscode-foreground) 18%, transparent);
+	color: var(--vscode-foreground);
+}
+
+.xlaunchpad-file-preview-theme-btn {
+	font-size: 13px;
+	padding: 1px 6px;
+	min-width: 26px;
+	text-align: center;
+}
+
+.xlaunchpad-file-preview-status {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--vscode-descriptionForeground);
+	opacity: 0.7;
+	padding: 0 4px;
+}
+
+/* ─── Preview Content Area ─── */
+.xlaunchpad-file-preview-content {
+	flex: 1;
+	overflow: auto;
+	min-height: 0;
+	position: relative;
+}
+
+/* ─── Markdown Preview ─── */
+.xlaunchpad-md-preview-container {
+	height: 100%;
+	overflow: auto;
+}
+
+.xlaunchpad-md-preview {
+	padding: 24px 32px;
+	color: var(--vscode-editor-foreground);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+	font-size: 14px;
+	line-height: 1.7;
+	word-wrap: break-word;
+	max-width: 900px;
+	margin: 0 auto;
+}
+
+.xlaunchpad-md-preview h1,
+.xlaunchpad-md-preview h2,
+.xlaunchpad-md-preview h3,
+.xlaunchpad-md-preview h4,
+.xlaunchpad-md-preview h5,
+.xlaunchpad-md-preview h6 {
+	color: var(--vscode-editor-foreground);
+	margin-top: 24px;
+	margin-bottom: 12px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.xlaunchpad-md-preview h1 {
+	font-size: 1.8em;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+
+.xlaunchpad-md-preview h2 {
+	font-size: 1.4em;
+	padding-bottom: 6px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+
+.xlaunchpad-md-preview h3 { font-size: 1.2em; }
+.xlaunchpad-md-preview h4 { font-size: 1.05em; }
+.xlaunchpad-md-preview h5 { font-size: 0.95em; }
+.xlaunchpad-md-preview h6 { font-size: 0.9em; color: var(--vscode-descriptionForeground); }
+
+.xlaunchpad-md-preview p {
+	margin: 0 0 12px;
+}
+
+.xlaunchpad-md-preview a {
+	color: var(--vscode-textLink-foreground);
+	text-decoration: none;
+}
+
+.xlaunchpad-md-preview a:hover {
+	text-decoration: underline;
+}
+
+.xlaunchpad-md-preview code {
+	background: color-mix(in srgb, var(--vscode-foreground) 8%, transparent);
+	padding: 2px 6px;
+	border-radius: 3px;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: 0.9em;
+}
+
+.xlaunchpad-md-preview pre {
+	background: var(--vscode-textCodeBlock-background, rgba(0, 0, 0, 0.15));
+	padding: 14px 18px;
+	border-radius: 6px;
+	overflow-x: auto;
+	margin: 0 0 16px;
+	border: 1px solid var(--vscode-editorWidget-border);
+}
+
+.xlaunchpad-md-preview pre code {
+	background: none;
+	padding: 0;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.xlaunchpad-md-preview blockquote {
+	margin: 0 0 16px;
+	padding: 8px 16px;
+	border-left: 3px solid var(--vscode-textLink-foreground);
+	background: color-mix(in srgb, var(--vscode-foreground) 5%, transparent);
+	color: var(--vscode-descriptionForeground);
+	border-radius: 0 4px 4px 0;
+}
+
+.xlaunchpad-md-preview blockquote p:last-child {
+	margin-bottom: 0;
+}
+
+.xlaunchpad-md-preview ul,
+.xlaunchpad-md-preview ol {
+	margin: 0 0 12px;
+	padding-left: 24px;
+}
+
+.xlaunchpad-md-preview li {
+	margin-bottom: 4px;
+}
+
+.xlaunchpad-md-preview li > ul,
+.xlaunchpad-md-preview li > ol {
+	margin-bottom: 0;
+}
+
+.xlaunchpad-md-preview table {
+	border-collapse: collapse;
+	width: 100%;
+	margin: 0 0 16px;
+}
+
+.xlaunchpad-md-preview th,
+.xlaunchpad-md-preview td {
+	padding: 8px 12px;
+	border: 1px solid var(--vscode-editorWidget-border);
+	text-align: left;
+}
+
+.xlaunchpad-md-preview th {
+	background: color-mix(in srgb, var(--vscode-foreground) 6%, transparent);
+	font-weight: 600;
+}
+
+.xlaunchpad-md-preview tr:nth-child(even) {
+	background: color-mix(in srgb, var(--vscode-foreground) 3%, transparent);
+}
+
+.xlaunchpad-md-preview hr {
+	border: none;
+	border-top: 1px solid var(--vscode-editorWidget-border);
+	margin: 24px 0;
+}
+
+.xlaunchpad-md-preview img {
+	max-width: 100%;
+	border-radius: 4px;
+}
+
+.xlaunchpad-md-preview input[type="checkbox"] {
+	margin-right: 6px;
+}
+
+/* ─── HTML Preview ─── */
+.xlaunchpad-html-preview-container {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+.xlaunchpad-html-preview-iframe {
+	width: 100%;
+	height: 100%;
+	border: none;
+	background: #fff;
+}
+
+/* ─── Source View ─── */
+.xlaunchpad-file-preview-source {
+	padding: 16px 20px;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: var(--vscode-editor-font-size, 13px);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/* ─── Preview Theme: Light Mode (Warm Cream) ─── */
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light {
+	background: #faf6f0;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview {
+	color: #2c2c2c;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h1,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h2,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h3,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h4,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h5,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h6 {
+	color: #1a1a1a;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h1,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h2 {
+	border-bottom-color: #d9d0c4;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview h6 {
+	color: #666;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview a {
+	color: #1a6bb5;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview code {
+	background: #e8e2d9;
+	color: #6e4a1e;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview pre {
+	background: #f0ebe4;
+	border-color: #d9d0c4;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview pre code {
+	background: none;
+	color: #2c2c2c;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview blockquote {
+	background: #f0ebe4;
+	border-left-color: #8b7355;
+	color: #555;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview th,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview td {
+	border-color: #d9d0c4;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview th {
+	background: #f0ebe4;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview tr:nth-child(even) {
+	background: #f2ede6;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-light .xlaunchpad-md-preview hr {
+	border-top-color: #d9d0c4;
+}
+
+/* ─── Preview Theme: Raw Mode ─── */
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw {
+	background: #fff;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview {
+	color: #000;
+	font-family: Georgia, 'Times New Roman', serif;
+	font-size: 16px;
+	line-height: 1.5;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h1,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h2,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h3,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h4,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h5,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h6 {
+	color: #000;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h1,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h2 {
+	border-bottom: none;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview h6 {
+	color: #333;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview a {
+	color: blue;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview code {
+	background: #eee;
+	color: #000;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview pre {
+	background: #f5f5f5;
+	border-color: #ccc;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview pre code {
+	color: #000;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview blockquote {
+	background: #f5f5f5;
+	border-left-color: #999;
+	color: #333;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview th,
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview td {
+	border-color: #ccc;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview th {
+	background: #f0f0f0;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview tr:nth-child(even) {
+	background: #f8f8f8;
+}
+
+.xlaunchpad-md-preview-container.xlaunchpad-preview-raw .xlaunchpad-md-preview hr {
+	border-top-color: #ccc;
+}
+
+/* ─── HTML Preview Theme Overrides ─── */
+.xlaunchpad-html-preview-container.xlaunchpad-preview-light {
+	background: #faf6f0;
+}
+
+/* ─── Error State ─── */
+.xlaunchpad-file-preview-error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: var(--vscode-errorForeground);
+	font-size: 13px;
+	padding: 20px;
+}
+
+/* ─── Loading State ─── */
+.xlaunchpad-file-preview-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: var(--vscode-descriptionForeground);
+	font-size: 13px;
+}

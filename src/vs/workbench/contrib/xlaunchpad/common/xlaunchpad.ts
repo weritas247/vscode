@@ -51,4 +51,5 @@ export const XLaunchpadModalId = {
 	Kanban: 'xlaunchpad.kanban',
 	ClaudeMonitor: 'xlaunchpad.claudeMonitor',
 	ClaudeTerminal: 'xlaunchpad.claudeTerminal',
+	FilePreview: 'xlaunchpad.filePreview',
 } as const;
