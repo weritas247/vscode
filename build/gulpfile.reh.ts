@@ -24,7 +24,7 @@ import gunzip from 'gulp-gunzip';
 import { untar } from './lib/util.ts';
 import File from 'vinyl';
 import * as fs from 'fs';
-import glob from 'glob';
+import * as glob from 'glob';
 import { promisify } from 'util';
 import rceditCallback from 'rcedit';
 import { compileBuildWithManglingTask } from './gulpfile.compile.ts';
@@ -434,8 +434,8 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
 
 	return async () => {
 		const deps = (await Promise.all([
-			promisify(glob)('**/*.node', { cwd }),
-			promisify(glob)('**/rg.exe', { cwd }),
+			glob.glob('**/*.node', { cwd }),
+			glob.glob('**/rg.exe', { cwd }),
 		])).flatMap(o => o);
 		const packageJsonContents = JSON.parse(await fs.promises.readFile(path.join(cwd, 'package.json'), 'utf8'));
 		const productContents = JSON.parse(await fs.promises.readFile(path.join(cwd, 'product.json'), 'utf8'));

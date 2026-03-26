@@ -35,12 +35,12 @@ import { getCopilotExcludeFilter, copyCopilotNativeDeps } from './lib/copilot.ts
 import type { EmbeddedProductInfo } from './lib/embeddedType.ts';
 import { useEsbuildTranspile } from './buildConfig.ts';
 import { promisify } from 'util';
-import globCallback from 'glob';
+import { glob } from 'glob';
 import rceditCallback from 'rcedit';
 import * as cp from 'child_process';
 
 
-const glob = promisify(globCallback);
+
 const rcedit = promisify(rceditCallback);
 const root = path.dirname(import.meta.dirname);
 const commit = getVersion(root);

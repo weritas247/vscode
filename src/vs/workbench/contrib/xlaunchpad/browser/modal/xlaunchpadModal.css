@@ -1,0 +1,153 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Overlay */
+.xlaunchpad-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: var(--z-index-xlaunchpad-modal);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.4);
+	opacity: 0;
+	transition: opacity 150ms ease;
+}
+
+.xlaunchpad-overlay.visible {
+	opacity: 1;
+}
+
+/* Modal Box */
+.xlaunchpad-modal {
+	display: flex;
+	flex-direction: column;
+	background: var(--vscode-editorWidget-background);
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: var(--vscode-cornerRadius-xLarge, 8px);
+	box-shadow: var(--vscode-shadow-xl, 0 8px 32px rgba(0,0,0,0.3));
+	max-width: 96vw;
+	max-height: 92vh;
+	overflow: hidden;
+	transform: scale(0.96);
+	transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.xlaunchpad-overlay.visible .xlaunchpad-modal {
+	transform: scale(1);
+}
+
+/* Titlebar */
+.xlaunchpad-titlebar {
+	display: flex;
+	align-items: center;
+	height: 40px;
+	padding: 0 12px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	user-select: none;
+	-webkit-user-select: none;
+	flex-shrink: 0;
+}
+
+.xlaunchpad-titlebar-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--vscode-foreground);
+	flex: 1;
+}
+
+.xlaunchpad-titlebar-close {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border: none;
+	background: transparent;
+	color: var(--vscode-foreground);
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+.xlaunchpad-titlebar-close:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+/* Tab Bar */
+.xlaunchpad-tabs {
+	display: flex;
+	gap: 0;
+	height: 34px;
+	padding: 0 12px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	flex-shrink: 0;
+}
+
+.xlaunchpad-tab {
+	display: flex;
+	align-items: center;
+	padding: 0 12px;
+	font-size: 12px;
+	color: var(--vscode-tab-inactiveForeground, var(--vscode-foreground));
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.xlaunchpad-tab:hover {
+	color: var(--vscode-foreground);
+}
+
+.xlaunchpad-tab.active {
+	color: var(--vscode-foreground);
+	border-bottom-color: var(--vscode-focusBorder);
+}
+
+.xlaunchpad-tab-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	margin-left: 6px;
+	font-size: 11px;
+	font-weight: 600;
+	border-radius: 9px;
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+}
+
+/* Body */
+.xlaunchpad-body {
+	flex: 1;
+	overflow: auto;
+	min-height: 0;
+}
+
+/* Resize Handle */
+.xlaunchpad-resize-handle {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 16px;
+	height: 16px;
+	cursor: nwse-resize;
+}
+
+.xlaunchpad-resize-handle::after {
+	content: '';
+	position: absolute;
+	right: 4px;
+	bottom: 4px;
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid var(--vscode-editorWidget-border);
+	border-bottom: 2px solid var(--vscode-editorWidget-border);
+	opacity: 0.5;
+}

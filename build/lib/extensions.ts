@@ -6,7 +6,7 @@
 import es from 'event-stream';
 import fs from 'fs';
 import cp from 'child_process';
-import glob from 'glob';
+import * as glob from 'glob';
 import gulp from 'gulp';
 import path from 'path';
 import crypto from 'crypto';

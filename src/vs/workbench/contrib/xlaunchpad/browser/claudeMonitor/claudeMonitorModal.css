@@ -1,0 +1,146 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Summary Cards */
+.claude-monitor-summary {
+	display: flex;
+	gap: 12px;
+	padding: 16px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	flex-wrap: wrap;
+}
+
+.claude-monitor-card {
+	flex: 1;
+	min-width: 140px;
+	padding: 12px 16px;
+	background: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 6px;
+}
+
+.claude-monitor-card-label {
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 4px;
+}
+
+.claude-monitor-card-value {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--vscode-foreground);
+	font-variant-numeric: tabular-nums;
+}
+
+.claude-monitor-card-sub {
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground);
+	margin-top: 2px;
+}
+
+/* Projects Table */
+.claude-monitor-projects {
+	padding: 16px;
+	overflow: auto;
+}
+
+.claude-monitor-projects-title {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--vscode-foreground);
+	margin-bottom: 8px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.claude-monitor-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+}
+
+.claude-monitor-table th {
+	text-align: left;
+	padding: 6px 10px;
+	font-weight: 600;
+	color: var(--vscode-descriptionForeground);
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	white-space: nowrap;
+}
+
+.claude-monitor-table td {
+	padding: 6px 10px;
+	color: var(--vscode-foreground);
+	border-bottom: 1px solid var(--vscode-editorWidget-border, transparent);
+	font-variant-numeric: tabular-nums;
+}
+
+.claude-monitor-table tr:hover td {
+	background: var(--vscode-list-hoverBackground);
+}
+
+.claude-monitor-table .num {
+	text-align: right;
+	font-family: var(--monaco-monospace-font, monospace);
+	font-size: 11px;
+}
+
+.claude-monitor-table .cost {
+	font-weight: 600;
+	color: var(--vscode-charts-orange, #e8ab53);
+}
+
+.claude-monitor-table .project-name {
+	max-width: 300px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Session Detail Row */
+.claude-monitor-session-row {
+	display: flex;
+	align-items: center;
+	padding: 4px 10px 4px 24px;
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground);
+	gap: 12px;
+}
+
+.claude-monitor-session-model {
+	padding: 1px 6px;
+	border-radius: 3px;
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+	font-size: 10px;
+}
+
+/* Empty State */
+.claude-monitor-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 48px 24px;
+	color: var(--vscode-descriptionForeground);
+	text-align: center;
+	gap: 8px;
+}
+
+.claude-monitor-empty-icon {
+	font-size: 32px;
+	opacity: 0.5;
+}
+
+.claude-monitor-empty-text {
+	font-size: 13px;
+}
+
+.claude-monitor-empty-hint {
+	font-size: 11px;
+	opacity: 0.7;
+}

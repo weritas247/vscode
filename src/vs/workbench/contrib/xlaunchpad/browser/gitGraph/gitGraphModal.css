@@ -1,0 +1,294 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Branch Tab: Graph + Commits */
+.git-graph-container {
+	display: flex;
+	height: 100%;
+	overflow: hidden;
+}
+
+.git-graph-scroll {
+	flex: 1;
+	overflow: auto;
+	position: relative;
+}
+
+.git-graph-svg-col {
+	position: absolute;
+	left: 0;
+	top: 0;
+	pointer-events: none;
+}
+
+.git-graph-commits {
+	position: relative;
+}
+
+/* Commit Row */
+.gg-row {
+	display: flex;
+	align-items: center;
+	height: 36px;
+	padding: 0 12px;
+	cursor: pointer;
+	font-size: 12px;
+	border-bottom: 1px solid transparent;
+	gap: 8px;
+}
+
+.gg-row:hover {
+	background: var(--vscode-list-hoverBackground);
+}
+
+.gg-row.selected {
+	background: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
+.gg-row.focused {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.gg-msg {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--vscode-foreground);
+}
+
+.gg-author {
+	width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	flex-shrink: 0;
+}
+
+.gg-hash {
+	font-family: var(--monaco-monospace-font, monospace);
+	font-size: 11px;
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.gg-hash:hover {
+	text-decoration: underline;
+}
+
+.gg-time {
+	width: 80px;
+	text-align: right;
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	flex-shrink: 0;
+}
+
+/* Ref Badges */
+.gg-ref {
+	display: inline-block;
+	padding: 1px 6px;
+	margin-right: 4px;
+	font-size: 10px;
+	font-weight: 600;
+	border-radius: 3px;
+	vertical-align: middle;
+}
+
+.gg-ref.branch {
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+}
+
+.gg-ref.tag {
+	background: var(--vscode-charts-yellow, #e5c07b);
+	color: #1a1a1a;
+}
+
+.gg-ref.head {
+	background: var(--vscode-charts-green, #98c379);
+	color: #1a1a1a;
+}
+
+/* Detail Row (expanded) */
+.gg-detail {
+	padding: 8px 12px 8px 60px;
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground);
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	background: var(--vscode-editor-background);
+}
+
+.gg-detail-stats {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 4px;
+}
+
+.gg-detail-stat {
+	font-variant-numeric: tabular-nums;
+}
+
+.gg-detail-stat.add {
+	color: var(--vscode-charts-green, #98c379);
+}
+
+.gg-detail-stat.del {
+	color: var(--vscode-charts-red, #f14c4c);
+}
+
+.gg-detail-parents {
+	margin-top: 4px;
+}
+
+.gg-detail-parent-hash {
+	font-family: var(--monaco-monospace-font, monospace);
+	color: var(--vscode-textLink-foreground);
+}
+
+/* Search */
+.gg-search-bar {
+	display: flex;
+	align-items: center;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	gap: 8px;
+}
+
+.gg-search-input {
+	flex: 1;
+	padding: 4px 8px;
+	font-size: 12px;
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, var(--vscode-editorWidget-border));
+	border-radius: 4px;
+	outline: none;
+}
+
+.gg-search-input:focus {
+	border-color: var(--vscode-focusBorder);
+}
+
+/* Status Tab */
+.git-status-container {
+	display: flex;
+	height: 100%;
+}
+
+.git-status-files {
+	width: 280px;
+	border-right: 1px solid var(--vscode-editorWidget-border);
+	overflow-y: auto;
+}
+
+.git-status-group {
+	padding: 4px 0;
+}
+
+.git-status-group-header {
+	padding: 4px 12px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--vscode-descriptionForeground);
+	letter-spacing: 0.5px;
+}
+
+.git-status-file {
+	display: flex;
+	align-items: center;
+	padding: 4px 12px;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 12px;
+}
+
+.git-status-file:hover {
+	background: var(--vscode-list-hoverBackground);
+}
+
+.git-status-file.active {
+	background: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
+.git-status-badge {
+	width: 16px;
+	text-align: center;
+	font-weight: 700;
+	font-size: 11px;
+	flex-shrink: 0;
+}
+
+.git-status-badge.M { color: var(--vscode-charts-orange, #e5c07b); }
+.git-status-badge.A { color: var(--vscode-charts-green, #98c379); }
+.git-status-badge.D { color: var(--vscode-charts-red, #f14c4c); }
+.git-status-badge.U,
+.git-status-badge.\\? { color: var(--vscode-descriptionForeground); }
+
+.git-status-path {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.git-status-diff {
+	flex: 1;
+	overflow: auto;
+	padding: 12px;
+	font-family: var(--monaco-monospace-font, monospace);
+	font-size: 12px;
+	line-height: 1.5;
+	white-space: pre-wrap;
+	word-break: break-all;
+	color: var(--vscode-editor-foreground);
+}
+
+.diff-add {
+	color: var(--vscode-charts-green, #98c379);
+	background: rgba(152, 195, 121, 0.1);
+}
+
+.diff-del {
+	color: var(--vscode-charts-red, #f14c4c);
+	background: rgba(241, 76, 76, 0.1);
+}
+
+.diff-hunk {
+	color: var(--vscode-charts-blue, #61afef);
+}
+
+/* Empty state */
+.git-graph-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: var(--vscode-descriptionForeground);
+	gap: 8px;
+}
+
+.git-graph-empty-icon {
+	font-size: 32px;
+	opacity: 0.5;
+}
+
+/* Loading */
+.git-graph-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: var(--vscode-descriptionForeground);
+	font-size: 13px;
+}
