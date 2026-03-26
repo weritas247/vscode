@@ -138,7 +138,7 @@
 	min-height: 0;
 }
 
-/* Resize Handle */
+/* Resize Handle (centered mode) */
 .xlaunchpad-resize-handle {
 	position: absolute;
 	right: 0;
@@ -158,4 +158,108 @@
 	border-right: 2px solid var(--vscode-editorWidget-border);
 	border-bottom: 2px solid var(--vscode-editorWidget-border);
 	opacity: 0.5;
+}
+
+/* ─── Floating Mode ─────────────────────────────────── */
+
+.xlaunchpad-overlay.floating {
+	background: transparent;
+	pointer-events: none;
+}
+
+.xlaunchpad-overlay.floating .xlaunchpad-modal {
+	pointer-events: auto;
+	box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.xlaunchpad-overlay.floating .xlaunchpad-titlebar {
+	cursor: move;
+}
+
+/* Minimize button */
+.xlaunchpad-titlebar-minimize {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border: none;
+	background: transparent;
+	color: var(--vscode-foreground);
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+.xlaunchpad-titlebar-minimize:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+/* 8-direction resize edges (floating mode) */
+.xlaunchpad-resize-edge {
+	position: absolute;
+}
+
+.xlaunchpad-resize-edge[data-dir="n"] {
+	top: -3px;
+	left: 8px;
+	right: 8px;
+	height: 6px;
+	cursor: ns-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="s"] {
+	bottom: -3px;
+	left: 8px;
+	right: 8px;
+	height: 6px;
+	cursor: ns-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="e"] {
+	right: -3px;
+	top: 8px;
+	bottom: 8px;
+	width: 6px;
+	cursor: ew-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="w"] {
+	left: -3px;
+	top: 8px;
+	bottom: 8px;
+	width: 6px;
+	cursor: ew-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="ne"] {
+	top: -3px;
+	right: -3px;
+	width: 12px;
+	height: 12px;
+	cursor: nesw-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="nw"] {
+	top: -3px;
+	left: -3px;
+	width: 12px;
+	height: 12px;
+	cursor: nwse-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="se"] {
+	bottom: -3px;
+	right: -3px;
+	width: 12px;
+	height: 12px;
+	cursor: nwse-resize;
+}
+
+.xlaunchpad-resize-edge[data-dir="sw"] {
+	bottom: -3px;
+	left: -3px;
+	width: 12px;
+	height: 12px;
+	cursor: nesw-resize;
 }

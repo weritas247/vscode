@@ -31,6 +31,7 @@ export class ClaudeMonitorModal extends XLaunchpadModal {
 			'Claude Monitor',
 			800, 500,
 			400, 300,
+			false,
 			layoutService,
 			storageService,
 		);

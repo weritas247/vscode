@@ -38,6 +38,7 @@ export class KanbanModal extends XLaunchpadModal {
 			'X-LAUNCHPAD',
 			1200, 800,
 			600, 400,
+			false,
 			layoutService,
 			storageService,
 		);
@@ -674,10 +675,10 @@ export class KanbanModal extends XLaunchpadModal {
 			const entry = entries.appendChild($('.kanban-activity-entry'));
 
 			const msg = entry.appendChild($('.kanban-activity-message'));
-			msg.textContent = log.message;
+			msg.textContent = log.content;
 
 			const time = entry.appendChild($('.kanban-activity-time'));
-			time.textContent = this.formatTimestamp(log.timestamp);
+			time.textContent = this.formatTimestamp(log.createdAt);
 		}
 	}
 

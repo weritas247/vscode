@@ -50,6 +50,7 @@ export class GitGraphModal extends XLaunchpadModal {
 			'Git Graph',
 			960, 640,
 			480, 320,
+			false,
 			layoutService,
 			storageService,
 		);
