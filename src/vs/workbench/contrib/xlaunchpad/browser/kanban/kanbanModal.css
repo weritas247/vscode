@@ -15,24 +15,24 @@
 
 .kanban-filter-bar {
 	display: flex;
-	align-items: center;
+	flex-direction: column;
 	padding: 8px 16px;
 	border-bottom: 1px solid var(--vscode-editorWidget-border);
 	flex-shrink: 0;
-	flex-wrap: wrap;
-	gap: 8px;
+	gap: 6px;
 }
 
 .kanban-filters {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	flex: 1;
+	width: 100%;
 }
 
 .kanban-filter {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: 6px;
 	padding: 4px 12px;
 	border: none;
@@ -43,6 +43,7 @@
 	font-weight: 600;
 	border-radius: 4px;
 	transition: color 100ms ease;
+	flex: 1;
 }
 
 .kanban-filter:hover {
@@ -105,6 +106,8 @@
 	display: flex;
 	align-items: center;
 	gap: 4px;
+	margin-left: auto;
+	flex: none;
 }
 
 .kanban-new-btn {
@@ -187,6 +190,28 @@
 	border: 1px solid var(--vscode-editorWidget-border);
 	border-radius: 6px;
 	overflow: hidden;
+	border-top: 3px solid var(--vscode-editorWidget-border);
+}
+
+/* Column top border colors */
+.kanban-column[data-column="todo"] {
+	border-top-color: #00e5ff;
+}
+
+.kanban-column[data-column="doing"] {
+	border-top-color: #ffab40;
+}
+
+.kanban-column[data-column="done"] {
+	border-top-color: #69f0ae;
+}
+
+.kanban-column[data-column="onhold"] {
+	border-top-color: #b388ff;
+}
+
+.kanban-column[data-column="cancelled"] {
+	border-top-color: #ff5252;
 }
 
 .kanban-column-header {
@@ -204,6 +229,27 @@
 	-webkit-user-select: none;
 }
 
+/* Column header text colors */
+.kanban-column[data-column="todo"] .kanban-column-header span {
+	color: #00e5ff;
+}
+
+.kanban-column[data-column="doing"] .kanban-column-header span {
+	color: #ffab40;
+}
+
+.kanban-column[data-column="done"] .kanban-column-header span {
+	color: #69f0ae;
+}
+
+.kanban-column[data-column="onhold"] .kanban-column-header span {
+	color: #b388ff;
+}
+
+.kanban-column[data-column="cancelled"] .kanban-column-header span {
+	color: #ff5252;
+}
+
 .kanban-column-count {
 	display: inline-flex;
 	align-items: center;
@@ -216,6 +262,32 @@
 	border-radius: 9px;
 	background: var(--vscode-badge-background);
 	color: var(--vscode-badge-foreground);
+}
+
+/* Column count badge colors */
+.kanban-column[data-column="todo"] .kanban-column-count {
+	background: #00e5ff;
+	color: #000;
+}
+
+.kanban-column[data-column="doing"] .kanban-column-count {
+	background: #ffab40;
+	color: #000;
+}
+
+.kanban-column[data-column="done"] .kanban-column-count {
+	background: #69f0ae;
+	color: #000;
+}
+
+.kanban-column[data-column="onhold"] .kanban-column-count {
+	background: #b388ff;
+	color: #000;
+}
+
+.kanban-column[data-column="cancelled"] .kanban-column-count {
+	background: #ff5252;
+	color: #000;
 }
 
 .kanban-column-body {
@@ -280,6 +352,14 @@
 	-webkit-user-select: none;
 }
 
+.kanban-sidebar-col[data-column="onhold"] .kanban-sidebar-label {
+	color: #b388ff;
+}
+
+.kanban-sidebar-col[data-column="cancelled"] .kanban-sidebar-label {
+	color: #ff5252;
+}
+
 .kanban-sidebar-count {
 	display: flex;
 	align-items: center;
@@ -324,10 +404,24 @@
 	margin-bottom: 6px;
 	background: var(--vscode-editorWidget-background);
 	border: 1px solid var(--vscode-editorWidget-border);
+	border-left: 3px solid var(--vscode-editorWidget-border);
 	border-radius: 6px;
 	cursor: grab;
 	font-size: 12px;
 	transition: border-color 100ms ease, box-shadow 100ms ease;
+}
+
+/* Card left border colors by category */
+.kanban-card[data-category="feature"] {
+	border-left-color: var(--vscode-charts-blue, #3794ff);
+}
+
+.kanban-card[data-category="bug"] {
+	border-left-color: var(--vscode-charts-red, #f14c4c);
+}
+
+.kanban-card[data-category="other"] {
+	border-left-color: var(--vscode-charts-purple, #b180d7);
 }
 
 .kanban-card:hover {
@@ -398,6 +492,11 @@
 	color: #fff;
 }
 
+.kanban-card-ai {
+	font-size: 12px;
+	cursor: default;
+}
+
 .kanban-card-time {
 	margin-left: auto;
 	font-size: 10px;
@@ -408,16 +507,15 @@
 /* ── Detail Modal ───────────────────────────────── */
 
 .kanban-detail-overlay {
-	position: absolute;
+	position: fixed;
 	inset: 0;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	background: rgba(0, 0, 0, 0.5);
-	z-index: 10;
+	z-index: 9999;
 	opacity: 0;
 	transition: opacity 150ms ease;
-	border-radius: inherit;
 }
 
 .kanban-detail-overlay.visible {
@@ -806,4 +904,66 @@
 .kanban-delete-btn:hover {
 	background: var(--vscode-errorForeground);
 	color: #fff;
+}
+
+/* ── Context Menu ──────────────────────────────── */
+
+.kanban-context-menu {
+	position: absolute;
+	z-index: 20;
+	min-width: 180px;
+	padding: 6px 0;
+	background: var(--vscode-editorWidget-background);
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	opacity: 0;
+	transform: scale(0.95);
+	transition: opacity 100ms ease, transform 100ms ease;
+}
+
+.kanban-context-menu.visible {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.kanban-context-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 7px 16px;
+	cursor: pointer;
+	font-size: 13px;
+	color: var(--vscode-foreground);
+	transition: background 80ms ease;
+}
+
+.kanban-context-item:hover {
+	background: var(--vscode-list-hoverBackground);
+}
+
+.kanban-context-item.active {
+	color: var(--vscode-charts-green, #73c991);
+}
+
+.kanban-context-item.danger .kanban-context-label {
+	color: var(--vscode-errorForeground);
+}
+
+.kanban-context-icon {
+	width: 18px;
+	text-align: center;
+	font-size: 14px;
+	flex-shrink: 0;
+}
+
+.kanban-context-label {
+	flex: 1;
+	font-weight: 500;
+}
+
+.kanban-context-separator {
+	height: 1px;
+	margin: 4px 12px;
+	background: var(--vscode-editorWidget-border);
 }

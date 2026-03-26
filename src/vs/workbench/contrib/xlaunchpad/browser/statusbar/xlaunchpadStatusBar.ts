@@ -226,20 +226,37 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 			const statusBarEl = document.querySelector(`.part[id="${Parts.STATUSBAR_PART}"]`) as HTMLElement | null;
 
 			if (sidebarEl && statusBarEl) {
+				statusBarEl.classList.add('xlaunchpad-statusbar-offset');
+
+				// Track sidebar width and set CSS variable
 				const updateOffset = () => {
 					const sidebarWidth = sidebarEl.offsetWidth;
 					const activityBarWidth = activityBarEl?.offsetWidth ?? 0;
-					statusBarEl.style.paddingLeft = `${sidebarWidth + activityBarWidth}px`;
+					statusBarEl.style.setProperty('--xlaunchpad-statusbar-offset', `${sidebarWidth + activityBarWidth}px`);
 				};
 
-				const observer = new ResizeObserver(() => updateOffset());
-				observer.observe(sidebarEl);
+				const resizeObserver = new ResizeObserver(() => updateOffset());
+				resizeObserver.observe(sidebarEl);
 				if (activityBarEl) {
-					observer.observe(activityBarEl);
+					resizeObserver.observe(activityBarEl);
 				}
-				this._register({ dispose: () => observer.disconnect() });
+				this._register({ dispose: () => resizeObserver.disconnect() });
+
+				// Intercept inline backgroundColor: move it to CSS variable, set element bg to transparent
+				const interceptBgColor = () => {
+					const bg = statusBarEl.style.backgroundColor;
+					if (bg && bg !== 'transparent') {
+						statusBarEl.style.setProperty('--xlaunchpad-statusbar-bg', bg);
+						statusBarEl.style.backgroundColor = 'transparent';
+					}
+				};
+
+				const mutationObserver = new MutationObserver(() => interceptBgColor());
+				mutationObserver.observe(statusBarEl, { attributes: true, attributeFilter: ['style'] });
+				this._register({ dispose: () => mutationObserver.disconnect() });
 
 				updateOffset();
+				interceptBgColor();
 			} else if (retries > 0) {
 				setTimeout(() => trySetup(retries - 1), 500);
 			}

@@ -115,7 +115,7 @@ export interface IKanbanDataProvider {
 	getColumnCounts(category?: KanbanCategory | 'all'): Record<KanbanColumn, number>;
 	getCategoryCounts(): Record<KanbanCategory | 'all', number>;
 	addCard(title: string, category: KanbanCategory): IKanbanCard;
-	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order'>>): void;
+	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order' | 'aiSessions'>>): void;
 	moveCard(id: string, toColumn: KanbanColumn, toOrder: number): void;
 	deleteCard(id: string): void;
 	getActivityLog(): IKanbanLog[];

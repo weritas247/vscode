@@ -1261,7 +1261,7 @@ configurationRegistry.registerConfiguration({
 		[ChatConfiguration.AIDisabled]: {
 			type: 'boolean',
 			description: nls.localize('chat.disableAIFeatures', "Disable and hide built-in AI features provided by GitHub Copilot, including chat and inline suggestions."),
-			default: false,
+			default: true,
 			scope: ConfigurationScope.WINDOW
 		},
 		'chat.allowAnonymousAccess': { // TODO@bpasero remove me eventually

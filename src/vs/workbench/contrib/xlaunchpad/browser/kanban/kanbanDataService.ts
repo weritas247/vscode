@@ -116,7 +116,7 @@ export class KanbanDataService extends Disposable {
 		return card;
 	}
 
-	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order'>>): void {
+	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order' | 'aiSessions'>>): void {
 		this.provider?.updateCard(id, updates);
 		this._onDidChange.fire();
 	}
@@ -289,7 +289,7 @@ class FileProvider extends Disposable implements IKanbanDataProvider {
 		return card;
 	}
 
-	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order'>>): void {
+	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order' | 'aiSessions'>>): void {
 		const card = this.board.cards.find(c => c.id === id);
 		if (!card) {
 			return;
@@ -314,6 +314,10 @@ class FileProvider extends Disposable implements IKanbanDataProvider {
 		}
 		if (updates.order !== undefined) {
 			card.order = updates.order;
+		}
+		if (updates.aiSessions !== undefined) {
+			card.aiSessions = updates.aiSessions;
+			changes.push('aiSessions');
 		}
 		if (changes.length > 0) {
 			card.updatedAt = new Date().toISOString();
@@ -504,7 +508,7 @@ class SupabaseProvider implements IKanbanDataProvider {
 		return card;
 	}
 
-	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order'>>): void {
+	updateCard(id: string, updates: Partial<Pick<IKanbanCard, 'title' | 'description' | 'category' | 'column' | 'order' | 'aiSessions'>>): void {
 		const card = this.cards.find(c => c.id === id);
 		if (!card) {
 			return;
@@ -526,6 +530,9 @@ class SupabaseProvider implements IKanbanDataProvider {
 		if (updates.order !== undefined) {
 			card.order = updates.order;
 		}
+		if (updates.aiSessions !== undefined) {
+			card.aiSessions = updates.aiSessions;
+		}
 		card.updatedAt = new Date().toISOString();
 
 		// Map to Supabase fields
@@ -541,6 +548,9 @@ class SupabaseProvider implements IKanbanDataProvider {
 		}
 		if (updates.column !== undefined) {
 			dbUpdates.status = columnToDbStatus(updates.column);
+		}
+		if (updates.aiSessions !== undefined) {
+			dbUpdates.ai_sessions = updates.aiSessions;
 		}
 
 		if (Object.keys(dbUpdates).length > 0) {

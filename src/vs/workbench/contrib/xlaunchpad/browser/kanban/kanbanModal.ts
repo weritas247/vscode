@@ -17,6 +17,13 @@ const MAIN_COLUMNS: KanbanColumn[] = ['todo', 'doing', 'done'];
 const SIDEBAR_COLUMNS: KanbanColumn[] = ['cancelled', 'onhold'];
 const ALL_COLUMNS: KanbanColumn[] = ['todo', 'doing', 'done', 'onhold', 'cancelled'];
 
+const AI_AGENTS = [
+	{ id: 'claude', label: 'Claude', icon: '\uD83C\uDF38' },
+	{ id: 'gemini', label: 'Gemini', icon: '\u2728' },
+	{ id: 'codex', label: 'Codex', icon: '\uD83C\uDF00' },
+	{ id: 'opencode', label: 'OpenCode', icon: '\u25AA' },
+] as const;
+
 export class KanbanModal extends XLaunchpadModal {
 
 	private dataService: KanbanDataService;
@@ -27,6 +34,7 @@ export class KanbanModal extends XLaunchpadModal {
 	private rootContainer: HTMLElement | undefined;
 	private detailOverlay: HTMLElement | undefined;
 	private expandedSidebarColumns: Set<KanbanColumn> = new Set();
+	private contextMenuEl: HTMLElement | undefined;
 
 	constructor(
 		@ILayoutService layoutService: ILayoutService,
@@ -128,14 +136,17 @@ export class KanbanModal extends XLaunchpadModal {
 			});
 		}
 
-		// Progress bar under filters
+		// Actions (same row as filters)
+		const actions = filters.appendChild($('.kanban-actions'));
+
+		// Progress bar under filters (full width)
 		const progressBar = bar.appendChild($('.kanban-filter-progress'));
-		const totalCards = counts.all;
-		if (totalCards > 0) {
+		const filteredTotal = counts[this.activeCategory];
+		if (filteredTotal > 0) {
 			const columnCounts = this.dataService.getColumnCounts(this.activeCategory);
-			const donePercent = (columnCounts.done / totalCards) * 100;
-			const doingPercent = (columnCounts.doing / totalCards) * 100;
-			const todoPercent = (columnCounts.todo / totalCards) * 100;
+			const donePercent = (columnCounts.done / filteredTotal) * 100;
+			const doingPercent = (columnCounts.doing / filteredTotal) * 100;
+			const todoPercent = (columnCounts.todo / filteredTotal) * 100;
 
 			const doneBar = progressBar.appendChild($('.kanban-progress-segment.done'));
 			doneBar.style.width = `${donePercent}%`;
@@ -144,9 +155,6 @@ export class KanbanModal extends XLaunchpadModal {
 			const todoBar = progressBar.appendChild($('.kanban-progress-segment.todo'));
 			todoBar.style.width = `${todoPercent}%`;
 		}
-
-		// Actions
-		const actions = bar.appendChild($('.kanban-actions'));
 
 		const newBtn = actions.appendChild($('.kanban-new-btn'));
 		newBtn.textContent = '+ New';
@@ -214,6 +222,7 @@ export class KanbanModal extends XLaunchpadModal {
 
 	private renderColumn(parent: HTMLElement, column: KanbanColumn, cards: IKanbanCard[]): void {
 		const col = parent.appendChild($('.kanban-column'));
+		col.dataset.column = column;
 
 		// Header
 		const header = col.appendChild($('.kanban-column-header'));
@@ -353,6 +362,7 @@ export class KanbanModal extends XLaunchpadModal {
 		const el = parent.appendChild($('.kanban-card'));
 		el.draggable = true;
 		el.dataset.cardId = card.id;
+		el.dataset.category = card.category;
 		if (card.id === this.selectedCardId) {
 			el.classList.add('selected');
 		}
@@ -371,6 +381,13 @@ export class KanbanModal extends XLaunchpadModal {
 		el.addEventListener('click', () => {
 			this.selectedCardId = card.id;
 			this.showDetailModal(card);
+		});
+
+		// Right-click context menu
+		el.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.showContextMenu(e.clientX, e.clientY, card);
 		});
 
 		// Ticket ID
@@ -393,6 +410,19 @@ export class KanbanModal extends XLaunchpadModal {
 		const catBadge = meta.appendChild($('.kanban-card-category'));
 		catBadge.classList.add(card.category);
 		catBadge.textContent = KanbanCategoryLabels[card.category];
+
+		// AI session badges
+		if (card.aiSessions && card.aiSessions.length > 0) {
+			const uniqueAis = new Set(card.aiSessions.map(s => s.ai));
+			for (const aiId of uniqueAis) {
+				const agentDef = AI_AGENTS.find(a => a.id === aiId);
+				if (agentDef) {
+					const aiBadge = meta.appendChild($('.kanban-card-ai'));
+					aiBadge.textContent = agentDef.icon;
+					aiBadge.title = agentDef.label;
+				}
+			}
+		}
 
 		const timestamp = meta.appendChild($('.kanban-card-time'));
 		timestamp.textContent = this.formatTimestamp(card.updatedAt);
@@ -537,7 +567,7 @@ export class KanbanModal extends XLaunchpadModal {
 	private showDetailModal(card: IKanbanCard): void {
 		this.hideDetailModal();
 
-		const container = this.rootContainer?.closest('.xlaunchpad-modal') as HTMLElement;
+		const container = this.rootContainer?.closest('.xlaunchpad-overlay') as HTMLElement;
 		if (!container) {
 			return;
 		}
@@ -649,6 +679,139 @@ export class KanbanModal extends XLaunchpadModal {
 		requestAnimationFrame(() => {
 			overlay.classList.add('visible');
 		});
+	}
+
+	// ─── Context Menu ───────────────────────────────
+
+	private showContextMenu(x: number, y: number, card: IKanbanCard): void {
+		this.hideContextMenu();
+
+		const container = this.rootContainer?.closest('.xlaunchpad-modal') as HTMLElement;
+		if (!container) {
+			return;
+		}
+
+		const menu = container.appendChild($('.kanban-context-menu'));
+		this.contextMenuEl = menu;
+
+		// Position relative to the modal container
+		const rect = container.getBoundingClientRect();
+		let left = x - rect.left;
+		let top = y - rect.top;
+
+		menu.style.left = `${left}px`;
+		menu.style.top = `${top}px`;
+
+		// ── Edit ──
+		this.addContextMenuItem(menu, '\u270F\uFE0F', '편집', () => {
+			this.selectedCardId = card.id;
+			this.showDetailModal(card);
+		});
+
+		menu.appendChild($('.kanban-context-separator'));
+
+		// ── Status changes ──
+		const statusItems: Array<{ column: KanbanColumn; icon: string }> = [
+			{ column: 'todo', icon: '\uD83D\uDCCB' },
+			{ column: 'doing', icon: '\u2692' },
+			{ column: 'done', icon: '\u2705' },
+			{ column: 'onhold', icon: '\u23F8' },
+			{ column: 'cancelled', icon: '\u274C' },
+		];
+
+		for (const item of statusItems) {
+			const menuItem = this.addContextMenuItem(menu, item.icon, KanbanColumnLabels[item.column], () => {
+				this.dataService.moveCard(card.id, item.column, 0);
+				this.refresh();
+			});
+			if (item.column === card.column) {
+				menuItem.classList.add('active');
+			}
+		}
+
+		menu.appendChild($('.kanban-context-separator'));
+
+		// ── Delete ──
+		this.addContextMenuItem(menu, '\uD83D\uDDD1', '삭제', () => {
+			this.dataService.deleteCard(card.id);
+			this.selectedCardId = undefined;
+			this.refresh();
+		}, 'danger');
+
+		menu.appendChild($('.kanban-context-separator'));
+
+		// ── AI Agents ──
+		for (const agent of AI_AGENTS) {
+			this.addContextMenuItem(menu, agent.icon, agent.label, () => {
+				const sessions = [...(card.aiSessions || [])];
+				sessions.push({
+					sessionId: `${agent.id}-${Date.now()}`,
+					ai: agent.id,
+					ts: Date.now(),
+				});
+				this.dataService.updateCard(card.id, { aiSessions: sessions });
+				this.refresh();
+			});
+		}
+
+		// Adjust position if menu goes off screen
+		requestAnimationFrame(() => {
+			const menuRect = menu.getBoundingClientRect();
+			if (menuRect.right > rect.right) {
+				left = left - (menuRect.right - rect.right) - 8;
+				menu.style.left = `${left}px`;
+			}
+			if (menuRect.bottom > rect.bottom) {
+				top = top - (menuRect.bottom - rect.bottom) - 8;
+				menu.style.top = `${top}px`;
+			}
+			menu.classList.add('visible');
+		});
+
+		// Close on click outside
+		const closeHandler = (e: MouseEvent) => {
+			if (!menu.contains(e.target as Node)) {
+				this.hideContextMenu();
+				document.removeEventListener('mousedown', closeHandler, true);
+			}
+		};
+		document.addEventListener('mousedown', closeHandler, true);
+
+		// Close on Escape
+		const keyHandler = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				this.hideContextMenu();
+				document.removeEventListener('keydown', keyHandler, true);
+			}
+		};
+		document.addEventListener('keydown', keyHandler, true);
+	}
+
+	private addContextMenuItem(menu: HTMLElement, icon: string, label: string, action: () => void, variant?: string): HTMLElement {
+		const item = menu.appendChild($('.kanban-context-item'));
+		if (variant) {
+			item.classList.add(variant);
+		}
+
+		const iconEl = item.appendChild($('.kanban-context-icon'));
+		iconEl.textContent = icon;
+
+		const labelEl = item.appendChild($('.kanban-context-label'));
+		labelEl.textContent = label;
+
+		item.addEventListener('click', () => {
+			this.hideContextMenu();
+			action();
+		});
+
+		return item;
+	}
+
+	private hideContextMenu(): void {
+		if (this.contextMenuEl) {
+			this.contextMenuEl.remove();
+			this.contextMenuEl = undefined;
+		}
 	}
 
 	private hideDetailModal(): void {
