@@ -153,6 +153,11 @@
 		"tokenEntitlementUrl": "https://api.github.com/copilot_internal/v2/token",
 		"mcpRegistryDataUrl": "https://api.github.com/copilot/mcp_registry"
 	},
+	"xLaunchpad": {
+		"supabaseUrl": "https://qvwhhxfizpdsmzduyihq.supabase.co",
+		"supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2d2hoeGZpenBkc216ZHV5aWhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MTE1NzgsImV4cCI6MjA4OTM4NzU3OH0.Nx_8S81ZxBAs_l8qGTMUKPTACLGYUDGc359-xgc8NjE",
+		"userId": 2
+	},
 	"trustedExtensionAuthAccess": {
 		"github": [
 			"GitHub.copilot-chat"

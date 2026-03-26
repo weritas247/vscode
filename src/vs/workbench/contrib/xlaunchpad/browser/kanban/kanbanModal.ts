@@ -43,6 +43,12 @@ export class KanbanModal extends XLaunchpadModal {
 			storageService,
 		);
 		this.dataService = this._register(instantiationService.createInstance(KanbanDataService));
+		// Re-render when data arrives (Supabase async load)
+		this._register(this.dataService.onDidChange(() => {
+			if (this.getIsVisible()) {
+				this.refresh();
+			}
+		}));
 	}
 
 	override show(): void {
