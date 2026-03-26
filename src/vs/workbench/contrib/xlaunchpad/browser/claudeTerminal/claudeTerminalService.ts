@@ -39,7 +39,7 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 	createSession(): void {
 		this.sessionCounter++;
 		const id = `claude-terminal-${this.sessionCounter}`;
-		const label = `Claude Session ${this.sessionCounter}`;
+		const label = `Quick Claude ${this.sessionCounter}`;
 
 		const disposables = new DisposableStore();
 		const modal = disposables.add(this.instantiationService.createInstance(ClaudeTerminalModal, id, label));
@@ -86,6 +86,12 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 	closeActiveSession(): void {
 		if (this.lastActiveSessionId) {
 			this.closeSession(this.lastActiveSessionId);
+		}
+	}
+
+	closeAllSessions(): void {
+		for (const id of [...this.sessions.keys()]) {
+			this.closeSession(id);
 		}
 	}
 

@@ -35,6 +35,7 @@ export interface IClaudeTerminalService {
 	createSession(): void;
 	closeSession(id: string): void;
 	closeActiveSession(): void;
+	closeAllSessions(): void;
 	minimizeActiveSession(): void;
 	toggleLastSession(): void;
 	minimizeSession(id: string): void;

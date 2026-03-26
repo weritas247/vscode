@@ -142,7 +142,7 @@ registerAction2(class extends Action2 {
 
 		actions.push({
 			id: 'new-claude-session',
-			label: '+ New Claude Session',
+			label: '+ New Quick Claude',
 			enabled: true,
 			class: undefined,
 			tooltip: '',
