@@ -5,7 +5,6 @@
 import { EventEmitter } from 'events';
 EventEmitter.defaultMaxListeners = 100;
 
-import * as glob from 'glob';
 import gulp from 'gulp';
 import { createRequire } from 'node:module';
 import { monacoTypecheckTask /* , monacoTypecheckWatchTask */ } from './gulpfile.editor.ts';
@@ -19,6 +18,7 @@ import { useEsbuildTranspile } from './buildConfig.ts';
 gulp.task(compilation.compileExtensionPointNamesTask);
 
 const require = createRequire(import.meta.url);
+const glob = require('glob') as typeof import('glob');
 
 // API proposal names
 gulp.task(compilation.compileApiProposalNamesTask);

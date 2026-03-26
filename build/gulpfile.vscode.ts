@@ -35,7 +35,8 @@ import { getCopilotExcludeFilter, copyCopilotNativeDeps } from './lib/copilot.ts
 import type { EmbeddedProductInfo } from './lib/embeddedType.ts';
 import { useEsbuildTranspile } from './buildConfig.ts';
 import { promisify } from 'util';
-import { glob } from 'glob';
+import _glob from 'glob';
+const glob = ((_glob as any).default ?? _glob) as typeof _glob;
 import rceditCallback from 'rcedit';
 import * as cp from 'child_process';
 

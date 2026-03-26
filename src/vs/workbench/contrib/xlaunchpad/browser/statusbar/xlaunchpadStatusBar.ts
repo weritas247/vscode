@@ -25,14 +25,14 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 	) {
 		super();
 
-		// Git Graph
+		// Git Graph — positioned right after Problems (priority 50)
 		this._register(statusbarService.addEntry({
 			name: 'Git Graph',
 			text: '$(git-branch) Graph',
 			ariaLabel: 'Toggle Git Graph',
 			command: { id: 'xlaunchpad.toggleGitGraph', title: '' },
 			tooltip: 'Toggle Git Graph (Ctrl+G)',
-		}, 'xlaunchpad.gitGraph', StatusbarAlignment.RIGHT, -1000));
+		}, 'xlaunchpad.gitGraph', StatusbarAlignment.LEFT, 48));
 
 		// Kanban Board
 		this._register(statusbarService.addEntry({
@@ -41,7 +41,7 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 			ariaLabel: 'Toggle Kanban Board',
 			command: { id: 'xlaunchpad.toggleKanban', title: '' },
 			tooltip: 'Toggle Kanban Board (Ctrl+Shift+K)',
-		}, 'xlaunchpad.kanban', StatusbarAlignment.RIGHT, -1001));
+		}, 'xlaunchpad.kanban', StatusbarAlignment.LEFT, 47));
 
 		// Claude Terminal — click creates new session, hover shows popup
 		this._claudeEntry = this._register(statusbarService.addEntry({
@@ -50,7 +50,7 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 			ariaLabel: 'Quick Claude',
 			command: { id: 'xlaunchpad.toggleClaudeTerminal', title: '' },
 			tooltip: '',
-		}, 'xlaunchpad.claudeTerminal', StatusbarAlignment.RIGHT, -1002));
+		}, 'xlaunchpad.claudeTerminal', StatusbarAlignment.LEFT, 46));
 
 		// Update badge when session count changes
 		this._register(this._claudeTerminalService.onDidChangeSessionCount(() => {
@@ -116,6 +116,7 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 				boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
 				padding: '4px 0',
 				fontSize: '13px',
+				fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif',
 				minWidth: '220px',
 				position: 'fixed',
 				zIndex: '2700',
@@ -146,7 +147,8 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 		this._popup.setAttribute('style',
 			this._popup.getAttribute('style') + ';' +
 			'background:#252526;color:#cccccc;border:1px solid #454545;border-radius:6px;' +
-			'box-shadow:0 4px 16px rgba(0,0,0,0.5);padding:4px 0;font-size:13px;min-width:220px;' +
+			'box-shadow:0 4px 16px rgba(0,0,0,0.5);padding:4px 0;font-size:13px;' +
+			'font-family:-apple-system,BlinkMacSystemFont,"Segoe WPC","Segoe UI","Ubuntu","Droid Sans",sans-serif;min-width:220px;' +
 			'position:fixed;z-index:2700;'
 		);
 
