@@ -6,6 +6,7 @@
 import './claudeTerminalModal.css';
 import { $, addDisposableListener, clearNode, EventType } from '../../../../../base/browser/dom.js';
 import { Emitter } from '../../../../../base/common/event.js';
+import { DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { ILayoutService } from '../../../../../platform/layout/browser/layoutService.js';
 import { IStorageService } from '../../../../../platform/storage/common/storage.js';
 import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
@@ -57,8 +58,7 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 	private readonly _onDidRequestMinimize = this._register(new Emitter<void>());
 	readonly onDidRequestMinimize = this._onDidRequestMinimize.event;
 
-	private readonly _onDidRequestClose = this._register(new Emitter<void>());
-	readonly onDidRequestClose = this._onDidRequestClose.event;
+	private readonly sessionDisposables = this._register(new DisposableStore());
 
 	private xtermInstance: XtermTerminal | undefined;
 	private fitHelper: FitHelper | undefined;
@@ -108,6 +108,18 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 	}
 
 	private async initTerminal(container: HTMLElement): Promise<void> {
+		// Clean up any existing session (I3: stale references across show/hide cycles)
+		this.sessionDisposables.clear();
+		this.killProcess();
+		if (this.xtermInstance) {
+			this.xtermInstance.dispose();
+			this.xtermInstance = undefined;
+		}
+		if (this.fitHelper) {
+			this.fitHelper.dispose();
+			this.fitHelper = undefined;
+		}
+
 		try {
 			const xtermModule = await import('@xterm/xterm');
 
@@ -134,7 +146,7 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 			this.xtermInstance = terminal;
 
 			// Listen for theme changes
-			this._register(this.themeService.onDidColorThemeChange(colorTheme => {
+			this.sessionDisposables.add(this.themeService.onDidColorThemeChange(colorTheme => {
 				terminal.options.theme = this.buildXtermTheme(colorTheme);
 			}));
 
@@ -164,22 +176,22 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 				kill: () => pty.kill(),
 			};
 
-			pty.onData(data => {
+			this.sessionDisposables.add(pty.onData(data => {
 				terminal.write(data);
-			});
+			}));
 
-			terminal.onData(data => {
+			this.sessionDisposables.add(terminal.onData(data => {
 				pty.write(data);
-			});
+			}));
 
-			terminal.onResize(({ cols, rows }) => {
+			this.sessionDisposables.add(terminal.onResize(({ cols, rows }) => {
 				pty.resize(cols, rows);
-			});
+			}));
 
-			pty.onExit(() => {
+			this.sessionDisposables.add(pty.onExit(() => {
 				terminal.write('\r\n[Session ended]\r\n');
 				this.ptyProcess = undefined;
-			});
+			}));
 
 			// Auto-run claude after a short delay
 			setTimeout(() => {
@@ -233,13 +245,14 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 		text.textContent = message;
 		const retryBtn = errorDiv.appendChild($('button.claude-terminal-error-retry'));
 		retryBtn.textContent = 'Retry';
-		this._register(addDisposableListener(retryBtn, EventType.CLICK, () => {
+		this.sessionDisposables.add(addDisposableListener(retryBtn, EventType.CLICK, () => {
 			clearNode(container);
 			this.initTerminal(container);
 		}));
 	}
 
 	killProcess(): void {
+		this.sessionDisposables.clear();
 		if (this.ptyProcess) {
 			this.ptyProcess.kill();
 			this.ptyProcess = undefined;
@@ -252,7 +265,10 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 			this.xtermInstance.dispose();
 			this.xtermInstance = undefined;
 		}
-		this.fitHelper = undefined;
+		if (this.fitHelper) {
+			this.fitHelper.dispose();
+			this.fitHelper = undefined;
+		}
 		super.dispose();
 	}
 }
