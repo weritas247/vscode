@@ -6,7 +6,7 @@
 import { CancellationTokenSource } from '../../../../../base/common/cancellation.js';
 import { ISCMService, ISCMRepository } from '../../../scm/common/scm.js';
 import { ISCMHistoryProvider, ISCMHistoryItem } from '../../../scm/common/history.js';
-import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
+import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
 
 export interface ICommitEntry {
 	hash: string;
@@ -50,15 +50,10 @@ export class GitGraphDataService {
 
 	constructor(
 		@ISCMService private readonly scmService: ISCMService,
-		@IWorkspaceContextService private readonly workspaceService: IWorkspaceContextService,
+		@ITextModelService private readonly textModelService: ITextModelService,
 	) { }
 
 	private getRepository(): { repo: ISCMRepository; historyProvider: ISCMHistoryProvider } | undefined {
-		const folders = this.workspaceService.getWorkspace().folders;
-		if (folders.length === 0) {
-			return undefined;
-		}
-
 		for (const repo of this.scmService.repositories) {
 			const provider = repo.provider;
 			if (provider.providerId !== 'git') {
@@ -73,8 +68,28 @@ export class GitGraphDataService {
 		return undefined;
 	}
 
+	/**
+	 * Wait for a git SCM repository with a ready history provider.
+	 * The git extension may still be initializing when the modal opens,
+	 * and the historyProvider observable may not yet have a value.
+	 */
+	async waitForRepository(timeoutMs = 8000): Promise<{ repo: ISCMRepository; historyProvider: ISCMHistoryProvider } | undefined> {
+		const pollIntervalMs = 300;
+		const deadline = Date.now() + timeoutMs;
+
+		while (Date.now() < deadline) {
+			const result = this.getRepository();
+			if (result) {
+				return result;
+			}
+			await new Promise<void>(resolve => setTimeout(resolve, pollIntervalMs));
+		}
+
+		return undefined;
+	}
+
 	async getCommits(maxCount = 50, _skip = 0): Promise<{ commits: ICommitEntry[]; hasMore: boolean }> {
-		const entry = this.getRepository();
+		const entry = this.getRepository() ?? await this.waitForRepository();
 		if (!entry) {
 			return { commits: [], hasMore: false };
 		}
@@ -83,8 +98,24 @@ export class GitGraphDataService {
 		const cts = new CancellationTokenSource();
 
 		try {
+			// Gather all available refs (branches, tags) so git log covers all history
+			const allRefs = await historyProvider.provideHistoryItemRefs(undefined, cts.token);
+			const refIds = allRefs?.map(r => r.id) ?? [];
+
+			// Fallback: if no refs available, try HEAD
+			if (refIds.length === 0) {
+				const currentRef = historyProvider.historyItemRef.get();
+				if (currentRef) {
+					refIds.push(currentRef.id);
+				}
+			}
+
+			if (refIds.length === 0) {
+				return { commits: [], hasMore: false };
+			}
+
 			const items = await historyProvider.provideHistoryItems(
-				{ limit: maxCount + 1 },
+				{ limit: maxCount + 1, historyItemRefs: refIds },
 				cts.token,
 			);
 
@@ -125,43 +156,140 @@ export class GitGraphDataService {
 	}
 
 	async getStatus(): Promise<IGitStatusFile[]> {
-		const entry = this.getRepository();
+		const entry = this.getRepository() ?? await this.waitForRepository();
 		if (!entry) {
 			return [];
 		}
 
-		// Use SCM resource groups to get status
 		const files: IGitStatusFile[] = [];
+		const rootUri = entry.repo.provider.rootUri;
+
 		for (const group of entry.repo.provider.groups) {
 			const staged = group.id === 'index';
 			for (const resource of group.resources) {
-				const status = staged ? 'M' : (group.id === 'untracked' ? '?' : 'M');
-				files.push({
-					status,
-					path: resource.sourceUri.fsPath,
-					staged,
-				});
+				let status: string;
+				switch (group.id) {
+					case 'index': status = 'S'; break;        // Staged
+					case 'merge': status = 'C'; break;        // Conflict
+					case 'untracked': status = '?'; break;    // Untracked
+					default: status = 'M'; break;             // Modified (workingTree)
+				}
+
+				// Show relative path if workspace root is available
+				let displayPath = resource.sourceUri.fsPath;
+				if (rootUri) {
+					const rootPath = rootUri.fsPath;
+					if (displayPath.startsWith(rootPath)) {
+						displayPath = displayPath.substring(rootPath.length + 1);
+					}
+				}
+
+				files.push({ status, path: displayPath, staged });
 			}
 		}
 
 		return files;
 	}
 
-	async getDiff(filePath: string, staged: boolean): Promise<string> {
-		const entry = this.getRepository();
+	/**
+	 * Get a unified diff string for a changed file by reading its
+	 * original and modified content through the SCM text model URIs.
+	 */
+	async getDiff(filePath: string): Promise<string> {
+		const entry = this.getRepository() ?? await this.waitForRepository();
 		if (!entry) {
 			return '';
 		}
 
-		// Diffs are not directly available via SCM service in a simple text form.
-		// For now, return empty. The diff viewer in VS Code handles this through editors.
-		void filePath;
-		void staged;
+		for (const group of entry.repo.provider.groups) {
+			for (const resource of group.resources) {
+				if (!resource.sourceUri.fsPath.endsWith(filePath) && resource.sourceUri.fsPath !== filePath) {
+					continue;
+				}
+
+				const origUri = resource.multiDiffEditorOriginalUri;
+				const modUri = resource.multiDiffEditorModifiedUri;
+
+				let origLines: string[] = [];
+				let modLines: string[] = [];
+
+				if (origUri) {
+					try {
+						const ref = await this.textModelService.createModelReference(origUri);
+						origLines = ref.object.textEditorModel?.getLinesContent() ?? [];
+						ref.dispose();
+					} catch { /* new file, no original */ }
+				}
+
+				if (modUri) {
+					try {
+						const ref = await this.textModelService.createModelReference(modUri);
+						modLines = ref.object.textEditorModel?.getLinesContent() ?? [];
+						ref.dispose();
+					} catch { /* deleted file, no modified */ }
+				}
+
+				return this.buildUnifiedDiff(origLines, modLines, filePath);
+			}
+		}
 		return '';
 	}
 
+	private buildUnifiedDiff(origLines: string[], modLines: string[], filePath: string): string {
+		const result: string[] = [`--- a/${filePath}`, `+++ b/${filePath}`];
+
+		// Simple line-by-line diff (not optimal but readable)
+		const maxLen = Math.max(origLines.length, modLines.length);
+		let hunkStart = -1;
+		const hunkLines: string[] = [];
+
+		const flushHunk = () => {
+			if (hunkLines.length > 0) {
+				result.push(`@@ -${hunkStart + 1} +${hunkStart + 1} @@`);
+				result.push(...hunkLines);
+				hunkLines.length = 0;
+			}
+			hunkStart = -1;
+		};
+
+		for (let i = 0; i < maxLen; i++) {
+			const o = i < origLines.length ? origLines[i] : undefined;
+			const m = i < modLines.length ? modLines[i] : undefined;
+
+			if (o === m) {
+				if (hunkLines.length > 0) {
+					hunkLines.push(' ' + (o ?? ''));
+					if (hunkLines.filter(l => l.startsWith(' ')).length > 3) {
+						flushHunk();
+					}
+				}
+				continue;
+			}
+
+			if (hunkStart === -1) {
+				hunkStart = Math.max(0, i - 1);
+				// Context line before
+				if (i > 0 && i - 1 < origLines.length) {
+					hunkLines.push(' ' + origLines[i - 1]);
+				}
+			}
+
+			if (o !== undefined && m !== undefined) {
+				hunkLines.push('-' + o);
+				hunkLines.push('+' + m);
+			} else if (o !== undefined) {
+				hunkLines.push('-' + o);
+			} else if (m !== undefined) {
+				hunkLines.push('+' + m);
+			}
+		}
+
+		flushHunk();
+		return result.join('\n');
+	}
+
 	async getCurrentBranch(): Promise<string> {
-		const entry = this.getRepository();
+		const entry = this.getRepository() ?? await this.waitForRepository();
 		if (!entry) {
 			return '';
 		}

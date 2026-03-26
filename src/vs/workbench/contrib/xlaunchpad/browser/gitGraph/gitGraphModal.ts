@@ -331,9 +331,9 @@ export class GitGraphModal extends XLaunchpadModal {
 			badge.textContent = file.status;
 			badge.classList.add(file.status);
 
-			const path = item.appendChild($('.git-status-path'));
-			path.textContent = file.path;
-			path.title = file.path;
+			const pathEl = item.appendChild($('.git-status-path'));
+			pathEl.textContent = file.path;
+			pathEl.title = file.path;
 
 			item.addEventListener('click', async () => {
 				// Update selection
@@ -341,21 +341,24 @@ export class GitGraphModal extends XLaunchpadModal {
 				item.classList.add('active');
 				// Load diff
 				diffPane.textContent = 'Loading diff...';
-				const diff = await this.dataService.getDiff(file.path, file.staged);
-				clearNode(diffPane);
-				if (diff) {
-					this.renderDiff(diffPane, diff);
-				} else {
-					diffPane.textContent = '(no diff available)';
+				try {
+					const diff = await this.dataService.getDiff(file.path);
+					clearNode(diffPane);
+					if (diff) {
+						this.renderDiff(diffPane, diff);
+					} else {
+						diffPane.textContent = '(no diff available)';
+					}
+				} catch {
+					diffPane.textContent = '(failed to load diff)';
 				}
 			});
 		}
 	}
 
 	private renderDiff(container: HTMLElement, diff: string): void {
-		const lines = diff.split('\n');
-		for (const line of lines) {
-			const el = document.createElement('div');
+		for (const line of diff.split('\n')) {
+			const el = container.appendChild($('div'));
 			if (line.startsWith('+') && !line.startsWith('+++')) {
 				el.className = 'diff-add';
 			} else if (line.startsWith('-') && !line.startsWith('---')) {
@@ -364,7 +367,6 @@ export class GitGraphModal extends XLaunchpadModal {
 				el.className = 'diff-hunk';
 			}
 			el.textContent = line;
-			container.appendChild(el);
 		}
 	}
 
