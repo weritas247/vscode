@@ -142,6 +142,14 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 			return;
 		}
 
+		// Ensure popup styles are applied (inline to bypass any CSS specificity issues)
+		this._popup.setAttribute('style',
+			this._popup.getAttribute('style') + ';' +
+			'background:#252526;color:#cccccc;border:1px solid #454545;border-radius:6px;' +
+			'box-shadow:0 4px 16px rgba(0,0,0,0.5);padding:4px 0;font-size:13px;min-width:220px;' +
+			'position:fixed;z-index:2700;'
+		);
+
 		// Clear existing content
 		while (this._popup.firstChild) {
 			this._popup.removeChild(this._popup.firstChild);
