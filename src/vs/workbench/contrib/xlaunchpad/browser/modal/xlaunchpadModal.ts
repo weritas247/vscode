@@ -50,6 +50,7 @@ export abstract class XLaunchpadModal extends Disposable {
 	protected abstract getTabs(): IXLaunchpadTab[];
 	protected abstract renderTabContent(tabId: string, container: HTMLElement): void;
 	protected abstract onTabChanged(tabId: string): void;
+	protected renderTitlebarActions(_container: HTMLElement): void { /* override in subclass */ }
 
 	// --- Public API ---
 
@@ -141,6 +142,10 @@ export abstract class XLaunchpadModal extends Disposable {
 		const titlebar = this.modalBox.appendChild($('.xlaunchpad-titlebar'));
 		const titleEl = titlebar.appendChild($('.xlaunchpad-titlebar-title'));
 		titleEl.textContent = this.title;
+
+		// Subclass hook for toolbar actions
+		const actionsArea = titlebar.appendChild($('.xlaunchpad-titlebar-actions'));
+		this.renderTitlebarActions(actionsArea);
 
 		const closeBtn = titlebar.appendChild($('.xlaunchpad-titlebar-close'));
 		closeBtn.textContent = '\u00D7'; // ×

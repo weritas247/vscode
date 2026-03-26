@@ -58,6 +58,14 @@
 	flex: 1;
 }
 
+.xlaunchpad-titlebar-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+	margin-right: 8px;
+}
+
 .xlaunchpad-titlebar-close {
 	display: flex;
 	align-items: center;

@@ -121,38 +121,114 @@
 
 /* Detail Row (expanded) */
 .gg-detail {
-	padding: 8px 12px 8px 60px;
-	font-size: 11px;
-	color: var(--vscode-descriptionForeground);
+	display: flex;
+	gap: 16px;
+	padding: 12px 16px;
+	font-size: 12px;
+	color: var(--vscode-foreground);
 	border-bottom: 1px solid var(--vscode-editorWidget-border);
 	background: var(--vscode-editor-background);
+	max-height: 280px;
+	overflow: hidden;
 }
 
-.gg-detail-stats {
+.gg-detail-left {
+	flex: 1;
+	min-width: 0;
+	overflow-y: auto;
+}
+
+.gg-detail-right {
+	width: 320px;
+	flex-shrink: 0;
+	overflow-y: auto;
+	border-left: 1px solid var(--vscode-editorWidget-border);
+	padding-left: 16px;
+}
+
+.gg-detail-row {
 	display: flex;
 	gap: 12px;
-	margin-bottom: 4px;
+	padding: 2px 0;
+	line-height: 1.6;
 }
 
-.gg-detail-stat {
-	font-variant-numeric: tabular-nums;
+.gg-detail-label {
+	width: 64px;
+	flex-shrink: 0;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--vscode-descriptionForeground);
+	letter-spacing: 0.5px;
+	padding-top: 1px;
 }
 
-.gg-detail-stat.add {
-	color: var(--vscode-charts-green, #98c379);
-}
-
-.gg-detail-stat.del {
-	color: var(--vscode-charts-red, #f14c4c);
-}
-
-.gg-detail-parents {
-	margin-top: 4px;
-}
-
-.gg-detail-parent-hash {
+.gg-detail-hash {
 	font-family: var(--monaco-monospace-font, monospace);
 	color: var(--vscode-textLink-foreground);
+}
+
+.gg-detail-message {
+	white-space: pre-wrap;
+	line-height: 1.5;
+}
+
+/* Changed Files */
+.gg-detail-files-header {
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--vscode-descriptionForeground);
+	letter-spacing: 0.5px;
+	margin-bottom: 6px;
+}
+
+.gg-detail-files-list {
+	font-size: 11px;
+}
+
+.gg-detail-file {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 1px 0;
+	line-height: 1.5;
+}
+
+.gg-detail-file-badge {
+	width: 14px;
+	text-align: center;
+	font-weight: 700;
+	font-size: 10px;
+	flex-shrink: 0;
+}
+
+.gg-detail-file-badge.M { color: var(--vscode-charts-orange, #e5c07b); }
+.gg-detail-file-badge.A { color: var(--vscode-charts-green, #98c379); }
+.gg-detail-file-badge.D { color: var(--vscode-charts-red, #f14c4c); }
+.gg-detail-file-badge.R { color: var(--vscode-charts-blue, #61afef); }
+
+.gg-detail-file-path {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gg-detail-file-stats {
+	flex-shrink: 0;
+	font-variant-numeric: tabular-nums;
+	font-size: 10px;
+}
+
+.gg-detail-file-stats .add {
+	color: var(--vscode-charts-green, #98c379);
+	margin-right: 4px;
+}
+
+.gg-detail-file-stats .del {
+	color: var(--vscode-charts-red, #f14c4c);
 }
 
 /* Search */
@@ -294,4 +370,47 @@
 	min-height: 200px;
 	color: var(--vscode-descriptionForeground);
 	font-size: 13px;
+}
+
+/* Toolbar */
+.gg-toolbar-repo {
+	font-weight: 600;
+	font-size: 12px;
+	color: var(--vscode-foreground);
+}
+
+.gg-toolbar-branch {
+	display: inline-block;
+	padding: 2px 8px;
+	font-size: 11px;
+	font-weight: 600;
+	border-radius: 10px;
+	background: var(--vscode-charts-green, #98c379);
+	color: #1a1a1a;
+	white-space: nowrap;
+}
+
+.gg-toolbar-sep {
+	width: 1px;
+	height: 16px;
+	background: var(--vscode-editorWidget-border);
+	margin: 0 4px;
+}
+
+.gg-toolbar-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 10px;
+	font-size: 11px;
+	color: var(--vscode-foreground);
+	background: transparent;
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 4px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.gg-toolbar-btn:hover {
+	background: var(--vscode-toolbar-hoverBackground);
 }

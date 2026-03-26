@@ -5,12 +5,19 @@
 
 import './gitGraphModal.css';
 import { $, clearNode } from '../../../../../base/browser/dom.js';
+import { StandardMouseEvent } from '../../../../../base/browser/mouseEvent.js';
 import { createTrustedTypesPolicy } from '../../../../../base/browser/trustedTypes.js';
 import { StandardKeyboardEvent } from '../../../../../base/browser/keyboardEvent.js';
+import { Action, Separator } from '../../../../../base/common/actions.js';
 import { KeyCode } from '../../../../../base/common/keyCodes.js';
 import { ILayoutService } from '../../../../../platform/layout/browser/layoutService.js';
 import { IStorageService } from '../../../../../platform/storage/common/storage.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IContextMenuService } from '../../../../../platform/contextview/browser/contextView.js';
+import { IClipboardService } from '../../../../../platform/clipboard/common/clipboardService.js';
+import { INotificationService } from '../../../../../platform/notification/common/notification.js';
+import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
+import { URI } from '../../../../../base/common/uri.js';
 import { XLaunchpadModal, IXLaunchpadTab } from '../modal/xlaunchpadModal.js';
 import { XLaunchpadModalId } from '../../common/xlaunchpad.js';
 import { GitGraphDataService, ICommitEntry, IGitStatusFile } from './gitGraphDataService.js';
@@ -19,16 +26,24 @@ const ttPolicy = createTrustedTypesPolicy('gitGraphModal', { createHTML: value =
 
 export class GitGraphModal extends XLaunchpadModal {
 
+	private static readonly PAGE_SIZE = 20;
+
 	private dataService: GitGraphDataService;
 	private commits: ICommitEntry[] = [];
 	private selectedHash: string | undefined;
 	private focusedIdx = -1;
 	private searchQuery = '';
+	private hasMore = false;
+	private isLoadingMore = false;
 
 	constructor(
 		@ILayoutService layoutService: ILayoutService,
 		@IStorageService storageService: IStorageService,
 		@IInstantiationService instantiationService: IInstantiationService,
+		@IContextMenuService private readonly contextMenuService: IContextMenuService,
+		@IClipboardService private readonly clipboardService: IClipboardService,
+		@INotificationService private readonly notificationService: INotificationService,
+		@IOpenerService private readonly openerService: IOpenerService,
 	) {
 		super(
 			XLaunchpadModalId.GitGraph,
@@ -59,6 +74,64 @@ export class GitGraphModal extends XLaunchpadModal {
 	protected onTabChanged(_tabId: string): void {
 		this.selectedHash = undefined;
 		this.focusedIdx = -1;
+	}
+
+	protected override renderTitlebarActions(container: HTMLElement): void {
+		// Repo name
+		const repoName = this.dataService.getRepoName();
+		if (repoName) {
+			const nameEl = container.appendChild($('.gg-toolbar-repo'));
+			nameEl.textContent = repoName;
+		}
+
+		// Current branch badge (loaded async)
+		const branchBadge = container.appendChild($('.gg-toolbar-branch'));
+		branchBadge.textContent = '...';
+		this.dataService.getCurrentBranch().then(branch => {
+			branchBadge.textContent = branch || 'HEAD';
+		});
+
+		// Separator
+		container.appendChild($('.gg-toolbar-sep'));
+
+		// Pull
+		const pullBtn = container.appendChild($('.gg-toolbar-btn'));
+		pullBtn.textContent = '\u2193 Pull';
+		pullBtn.title = 'Git Pull';
+		pullBtn.addEventListener('click', async () => {
+			try {
+				await this.dataService.gitPull();
+				this.notificationService.info('Pull completed');
+			} catch (e) {
+				this.notificationService.error(`Pull failed: ${e}`);
+			}
+		});
+
+		// Push
+		const pushBtn = container.appendChild($('.gg-toolbar-btn'));
+		pushBtn.textContent = '\u2191 Push';
+		pushBtn.title = 'Git Push';
+		pushBtn.addEventListener('click', async () => {
+			try {
+				await this.dataService.gitPush();
+				this.notificationService.info('Push completed');
+			} catch (e) {
+				this.notificationService.error(`Push failed: ${e}`);
+			}
+		});
+
+		// GitHub link
+		const ghBtn = container.appendChild($('.gg-toolbar-btn'));
+		ghBtn.textContent = 'GitHub \u2197';
+		ghBtn.title = 'Open on GitHub';
+		ghBtn.addEventListener('click', async () => {
+			const url = await this.dataService.getRemoteUrl();
+			if (url) {
+				await this.openerService.open(URI.parse(url));
+			} else {
+				this.notificationService.info('No remote origin URL found');
+			}
+		});
 	}
 
 	// ─── Branch Tab ─────────────────────────────────────
@@ -106,26 +179,61 @@ export class GitGraphModal extends XLaunchpadModal {
 			}
 		});
 
-		// Load data
+		// Load initial page
 		try {
-			const { commits } = await this.dataService.getCommits(200);
-			this.commits = commits;
+			const result = await this.dataService.getCommits(GitGraphModal.PAGE_SIZE);
+			this.commits = result.commits;
+			this.hasMore = result.hasMore;
 			clearNode(graphContainer);
 
-			if (commits.length === 0) {
+			if (this.commits.length === 0) {
 				const empty = graphContainer.appendChild($('.git-graph-empty'));
 				empty.appendChild($('.git-graph-empty-icon')).textContent = '\u{1F4CB}';
 				empty.appendChild($('div')).textContent = 'No commits found';
 				return;
 			}
 
-			this.renderCommitGraph(graphContainer, commits);
+			this.renderCommitGraph(graphContainer, this.commits);
+
+			// Infinite scroll
+			const scrollEl = graphContainer.querySelector('.git-graph-scroll');
+			if (scrollEl) {
+				scrollEl.addEventListener('scroll', () => {
+					if (this.isLoadingMore || !this.hasMore || this.searchQuery) {
+						return;
+					}
+					const el = scrollEl as HTMLElement;
+					if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+						this.loadMoreCommits(graphContainer);
+					}
+				});
+			}
+
 			container.focus();
 		} catch {
 			clearNode(graphContainer);
 			const empty = graphContainer.appendChild($('.git-graph-empty'));
 			empty.appendChild($('.git-graph-empty-icon')).textContent = '\u26A0';
 			empty.appendChild($('div')).textContent = 'Failed to load git log';
+		}
+	}
+
+	private async loadMoreCommits(graphContainer: HTMLElement): Promise<void> {
+		this.isLoadingMore = true;
+
+		try {
+			const result = await this.dataService.getCommits(GitGraphModal.PAGE_SIZE, this.commits.length);
+			this.hasMore = result.hasMore;
+
+			if (result.commits.length === 0) {
+				return;
+			}
+
+			this.commits.push(...result.commits);
+			// Re-render with all commits (graph layout depends on full history)
+			this.renderCommitGraph(graphContainer, this.filterCommits());
+		} finally {
+			this.isLoadingMore = false;
 		}
 	}
 
@@ -203,7 +311,39 @@ export class GitGraphModal extends XLaunchpadModal {
 				this.toggleCommitDetail(container, c);
 				this.updateSelection(container);
 			});
+
+			// Right-click context menu
+			row.addEventListener('contextmenu', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.showCommitContextMenu(e, c);
+			});
 		}
+	}
+
+	private showCommitContextMenu(e: MouseEvent, commit: ICommitEntry): void {
+		const anchor = new StandardMouseEvent(window, e);
+		const cmd = this.dataService.commandService;
+
+		this.contextMenuService.showContextMenu({
+			getAnchor: () => anchor,
+			layer: 100,
+			getActions: () => [
+				new Action('gitGraph.cherryPick', 'Cherry Pick', undefined, true, () => cmd.executeCommand('git.cherryPick', commit.hash)),
+				new Action('gitGraph.revert', 'Revert', undefined, true, () => cmd.executeCommand('git.revert', commit.hash)),
+				new Separator(),
+				new Action('gitGraph.merge', 'Merge into Current Branch', undefined, true, () => cmd.executeCommand('git.merge', commit.hash)),
+				new Action('gitGraph.rebase', 'Rebase Current Branch on This Commit', undefined, true, () => cmd.executeCommand('git.rebase', commit.hash)),
+				new Separator(),
+				new Action('gitGraph.copyHash', 'Copy Commit Hash', undefined, true, async () => {
+					await this.clipboardService.writeText(commit.hash);
+					this.notificationService.info(`Copied: ${commit.hash.slice(0, 7)}`);
+				}),
+				new Action('gitGraph.copySubject', 'Copy Commit Subject', undefined, true, async () => {
+					await this.clipboardService.writeText(commit.message);
+				}),
+			],
+		});
 	}
 
 	private toggleCommitDetail(container: HTMLElement, commit: ICommitEntry): void {
@@ -230,35 +370,102 @@ export class GitGraphModal extends XLaunchpadModal {
 		detail.className = 'gg-detail';
 		detail.dataset.hash = commit.hash;
 
-		// Stats
-		const stats = detail.appendChild($('.gg-detail-stats'));
-		if (commit.additions > 0 || commit.deletions > 0) {
-			const addStat = stats.appendChild($('.gg-detail-stat.add'));
-			addStat.textContent = `+${commit.additions}`;
-			const delStat = stats.appendChild($('.gg-detail-stat.del'));
-			delStat.textContent = `-${commit.deletions}`;
-		}
+		// Two-column layout
+		const left = detail.appendChild($('.gg-detail-left'));
+		const right = detail.appendChild($('.gg-detail-right'));
 
-		// Full hash
-		const hashLine = detail.appendChild($('div'));
-		hashLine.style.fontFamily = 'var(--monaco-monospace-font, monospace)';
-		hashLine.textContent = commit.hash;
+		// ─── Left: Commit info ───
+		const addRow = (label: string, valueEl: HTMLElement) => {
+			const row = left.appendChild($('.gg-detail-row'));
+			row.appendChild($('.gg-detail-label')).textContent = label;
+			row.appendChild(valueEl);
+		};
 
-		// Parents
+		// COMMIT
+		const commitVal = $('span.gg-detail-hash');
+		commitVal.textContent = commit.hash.slice(0, 7);
+		addRow('COMMIT', commitVal);
+
+		// PARENTS
 		if (commit.parents.length > 0) {
-			const parents = detail.appendChild($('.gg-detail-parents'));
-			parents.textContent = 'Parents: ';
+			const parentsVal = $('span');
 			for (const ph of commit.parents) {
-				const span = parents.appendChild($('.gg-detail-parent-hash'));
-				span.textContent = ph.slice(0, 7) + ' ';
+				const span = parentsVal.appendChild($('span.gg-detail-hash'));
+				span.textContent = ph.slice(0, 7);
+				parentsVal.appendChild(document.createTextNode(' '));
 			}
+			addRow('PARENTS', parentsVal);
 		}
 
-		// Author + Date
-		const info = detail.appendChild($('div'));
-		info.textContent = `${commit.author} \u2022 ${new Date(commit.date).toLocaleString()}`;
+		// AUTHOR
+		const authorVal = $('span');
+		authorVal.textContent = commit.authorEmail
+			? `${commit.author} <${commit.authorEmail}>`
+			: commit.author;
+		addRow('AUTHOR', authorVal);
+
+		// DATE
+		const dateVal = $('span');
+		const d = new Date(commit.date);
+		dateVal.textContent = d.toLocaleString('en', {
+			year: 'numeric', month: 'short', day: 'numeric',
+			hour: '2-digit', minute: '2-digit', second: '2-digit',
+		});
+		addRow('DATE', dateVal);
+
+		// MESSAGE
+		const msgVal = $('span.gg-detail-message');
+		const fullMsg = commit.body || commit.message;
+		msgVal.textContent = fullMsg;
+		addRow('MESSAGE', msgVal);
+
+		// ─── Right: Changed files (loaded async) ───
+		const filesHeader = right.appendChild($('.gg-detail-files-header'));
+		filesHeader.textContent = 'CHANGED FILES';
+
+		const filesList = right.appendChild($('.gg-detail-files-list'));
+		filesList.textContent = 'Loading...';
+
+		this.loadChangedFiles(commit, filesList, filesHeader);
 
 		row.after(detail);
+	}
+
+	private async loadChangedFiles(commit: ICommitEntry, filesList: HTMLElement, filesHeader: HTMLElement): Promise<void> {
+		try {
+			const files = await this.dataService.getChangedFiles(commit);
+			clearNode(filesList);
+
+			filesHeader.textContent = `CHANGED FILES (${files.length})`;
+
+			for (const file of files) {
+				const item = filesList.appendChild($('.gg-detail-file'));
+
+				const badge = item.appendChild($('.gg-detail-file-badge'));
+				badge.textContent = file.status;
+				badge.classList.add(file.status);
+
+				const path = item.appendChild($('.gg-detail-file-path'));
+				path.textContent = file.path;
+				path.title = file.path;
+
+				if (file.additions > 0 || file.deletions > 0) {
+					const stats = item.appendChild($('.gg-detail-file-stats'));
+					if (file.additions > 0) {
+						stats.appendChild($('span.add')).textContent = `+${file.additions}`;
+					}
+					if (file.deletions > 0) {
+						stats.appendChild($('span.del')).textContent = `-${file.deletions}`;
+					}
+				}
+			}
+
+			if (files.length === 0) {
+				filesList.textContent = '(no changed files)';
+			}
+		} catch {
+			filesList.textContent = '(failed to load)';
+		}
 	}
 
 	private updateSelection(container: HTMLElement): void {

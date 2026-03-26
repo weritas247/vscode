@@ -7,14 +7,26 @@ import { CancellationTokenSource } from '../../../../../base/common/cancellation
 import { ISCMService, ISCMRepository } from '../../../scm/common/scm.js';
 import { ISCMHistoryProvider, ISCMHistoryItem } from '../../../scm/common/history.js';
 import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
+import { IFileService } from '../../../../../platform/files/common/files.js';
+import { URI } from '../../../../../base/common/uri.js';
 
 export interface ICommitEntry {
 	hash: string;
 	parents: string[];
 	refs: string[];
 	author: string;
+	authorEmail: string;
 	date: string;
 	message: string;
+	body: string;
+	additions: number;
+	deletions: number;
+}
+
+export interface IChangedFile {
+	path: string;
+	status: 'M' | 'A' | 'D' | 'R';
 	additions: number;
 	deletions: number;
 }
@@ -51,6 +63,8 @@ export class GitGraphDataService {
 	constructor(
 		@ISCMService private readonly scmService: ISCMService,
 		@ITextModelService private readonly textModelService: ITextModelService,
+		@ICommandService readonly commandService: ICommandService,
+		@IFileService private readonly fileService: IFileService,
 	) { }
 
 	private getRepository(): { repo: ISCMRepository; historyProvider: ISCMHistoryProvider } | undefined {
@@ -88,7 +102,7 @@ export class GitGraphDataService {
 		return undefined;
 	}
 
-	async getCommits(maxCount = 50, _skip = 0): Promise<{ commits: ICommitEntry[]; hasMore: boolean }> {
+	async getCommits(maxCount = 20, skip = 0): Promise<{ commits: ICommitEntry[]; hasMore: boolean }> {
 		const entry = this.getRepository() ?? await this.waitForRepository();
 		if (!entry) {
 			return { commits: [], hasMore: false };
@@ -115,7 +129,7 @@ export class GitGraphDataService {
 			}
 
 			const items = await historyProvider.provideHistoryItems(
-				{ limit: maxCount + 1, historyItemRefs: refIds },
+				{ limit: maxCount + 1, skip, historyItemRefs: refIds },
 				cts.token,
 			);
 
@@ -148,11 +162,51 @@ export class GitGraphDataService {
 			parents: item.parentIds ?? [],
 			refs,
 			author: item.author ?? '',
+			authorEmail: item.authorEmail ?? '',
 			date: item.timestamp ? new Date(item.timestamp).toISOString() : '',
-			message: item.subject ?? item.message ?? '',
+			message: item.subject ?? '',
+			body: item.message ?? '',
 			additions: item.statistics?.insertions ?? 0,
 			deletions: item.statistics?.deletions ?? 0,
 		};
+	}
+
+	async getChangedFiles(commit: ICommitEntry): Promise<IChangedFile[]> {
+		const entry = this.getRepository();
+		if (!entry) {
+			return [];
+		}
+
+		const { historyProvider } = entry;
+		const parentId = commit.parents.length > 0 ? commit.parents[0] : undefined;
+		const cts = new CancellationTokenSource();
+
+		try {
+			const changes = await historyProvider.provideHistoryItemChanges(commit.hash, parentId, cts.token);
+			if (!changes) {
+				return [];
+			}
+
+			const rootPath = entry.repo.provider.rootUri?.fsPath ?? '';
+			return changes.map(change => {
+				let fullPath = change.uri.fsPath;
+				if (rootPath && fullPath.startsWith(rootPath)) {
+					fullPath = fullPath.substring(rootPath.length + 1);
+				}
+				// Determine status from URIs
+				let status: 'M' | 'A' | 'D' | 'R' = 'M';
+				if (!change.originalUri) {
+					status = 'A';
+				} else if (!change.modifiedUri) {
+					status = 'D';
+				}
+				return { path: fullPath, status, additions: 0, deletions: 0 };
+			});
+		} catch {
+			return [];
+		} finally {
+			cts.dispose();
+		}
 	}
 
 	async getStatus(): Promise<IGitStatusFile[]> {
@@ -296,6 +350,73 @@ export class GitGraphDataService {
 
 		const ref = entry.historyProvider.historyItemRef.get();
 		return ref?.name ?? '';
+	}
+
+	getRepoName(): string {
+		const entry = this.getRepository();
+		if (!entry?.repo.provider.rootUri) {
+			return '';
+		}
+		const fsPath = entry.repo.provider.rootUri.fsPath;
+		return fsPath.substring(fsPath.lastIndexOf('/') + 1);
+	}
+
+	/**
+	 * Read the remote 'origin' URL from `.git/config`.
+	 * Returns a browser-friendly HTTPS URL if the remote is GitHub/GitLab-like.
+	 */
+	async getRemoteUrl(): Promise<string | undefined> {
+		const entry = this.getRepository();
+		const rootUri = entry?.repo.provider.rootUri;
+		if (!rootUri) {
+			return undefined;
+		}
+
+		try {
+			const configUri = URI.joinPath(rootUri, '.git', 'config');
+			const content = await this.fileService.readFile(configUri);
+			const text = content.value.toString();
+
+			// Parse git config to find [remote "origin"] url = ...
+			const remoteRegex = /\[remote\s+"origin"\]\s*\n(?:\s+\w+\s*=\s*.*\n)*?\s*url\s*=\s*(.+)/m;
+			const match = remoteRegex.exec(text);
+			if (!match) {
+				return undefined;
+			}
+
+			let url = match[1].trim();
+
+			// Convert SSH URLs (git@github.com:user/repo.git) to HTTPS
+			const sshMatch = /^git@([^:]+):(.+?)(?:\.git)?$/.exec(url);
+			if (sshMatch) {
+				url = `https://${sshMatch[1]}/${sshMatch[2]}`;
+			}
+
+			// Strip trailing .git
+			url = url.replace(/\.git$/, '');
+
+			return url;
+		} catch {
+			return undefined;
+		}
+	}
+
+	/**
+	 * Execute a git pull using the built-in git extension command.
+	 */
+	async gitPull(): Promise<void> {
+		const entry = this.getRepository();
+		const rootUri = entry?.repo.provider.rootUri;
+		await this.commandService.executeCommand('git.pull', rootUri);
+	}
+
+	/**
+	 * Execute a git push using the built-in git extension command.
+	 */
+	async gitPush(): Promise<void> {
+		const entry = this.getRepository();
+		const rootUri = entry?.repo.provider.rootUri;
+		await this.commandService.executeCommand('git.push', rootUri);
 	}
 
 	// ─── Graph Layout Computation ───────────────────────
