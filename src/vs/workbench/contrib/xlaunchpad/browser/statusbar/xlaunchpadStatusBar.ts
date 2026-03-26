@@ -107,6 +107,19 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 	private _showPopup(anchor: HTMLElement): void {
 		if (!this._popup) {
 			this._popup = document.body.appendChild($('.claude-session-popup'));
+			// Apply inline styles to guarantee visibility regardless of CSS specificity
+			Object.assign(this._popup.style, {
+				background: '#252526',
+				color: '#cccccc',
+				border: '1px solid #454545',
+				borderRadius: '6px',
+				boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+				padding: '4px 0',
+				fontSize: '13px',
+				minWidth: '220px',
+				position: 'fixed',
+				zIndex: '2700',
+			});
 			this._register(addDisposableListener(this._popup, EventType.MOUSE_ENTER, () => {
 				this._clearHideTimeout();
 			}));
@@ -139,17 +152,25 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 		// Session items
 		for (const session of sessions) {
 			const item = this._popup.appendChild($('.claude-session-popup-item'));
+			Object.assign(item.style, { display: 'flex', alignItems: 'center', padding: '6px 12px', cursor: 'pointer', gap: '8px', color: '#cccccc' });
+			item.addEventListener('mouseenter', () => { item.style.background = '#094771'; item.style.color = '#ffffff'; });
+			item.addEventListener('mouseleave', () => { item.style.background = ''; item.style.color = '#cccccc'; });
 
 			const dot = item.appendChild($('.claude-session-popup-item-dot'));
+			Object.assign(dot.style, { width: '8px', height: '8px', borderRadius: '50%', background: '#4ec9b0', flexShrink: '0' });
 			if (session.minimized) {
 				dot.style.opacity = '0.4';
 			}
 
 			const label = item.appendChild($('.claude-session-popup-item-label'));
 			label.textContent = session.label;
+			Object.assign(label.style, { flex: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
 
 			const closeBtn = item.appendChild($('button.claude-session-popup-item-close'));
 			closeBtn.textContent = '\u00D7'; // ×
+			Object.assign(closeBtn.style, { display: 'none', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', border: 'none', background: 'transparent', color: '#cccccc', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', flexShrink: '0' });
+			item.addEventListener('mouseenter', () => { closeBtn.style.display = 'flex'; });
+			item.addEventListener('mouseleave', () => { closeBtn.style.display = 'none'; });
 
 			// Click label area → restore/focus
 			item.addEventListener('click', (e) => {
@@ -169,11 +190,15 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 
 		// Separator
 		if (sessions.length > 0) {
-			this._popup.appendChild($('.claude-session-popup-separator'));
+			const sep = this._popup.appendChild($('.claude-session-popup-separator'));
+			Object.assign(sep.style, { height: '1px', background: '#454545', margin: '4px 8px' });
 		}
 
 		// New session
 		const newItem = this._popup.appendChild($('.claude-session-popup-action'));
+		Object.assign(newItem.style, { display: 'flex', alignItems: 'center', padding: '6px 12px', cursor: 'pointer', gap: '8px', color: '#cccccc', opacity: '0.8' });
+		newItem.addEventListener('mouseenter', () => { newItem.style.background = '#094771'; newItem.style.color = '#ffffff'; newItem.style.opacity = '1'; });
+		newItem.addEventListener('mouseleave', () => { newItem.style.background = ''; newItem.style.color = '#cccccc'; newItem.style.opacity = '0.8'; });
 		const newIcon = newItem.appendChild($('.claude-session-popup-action-icon'));
 		newIcon.textContent = '+';
 		const newLabel = newItem.appendChild($('span'));
@@ -185,7 +210,10 @@ export class XLaunchpadStatusBarContribution extends Disposable implements IWork
 
 		// Close all (only if sessions exist)
 		if (sessions.length > 0) {
-			const closeAllItem = this._popup.appendChild($('.claude-session-popup-action.destructive'));
+			const closeAllItem = this._popup.appendChild($('.claude-session-popup-action'));
+			Object.assign(closeAllItem.style, { display: 'flex', alignItems: 'center', padding: '6px 12px', cursor: 'pointer', gap: '8px', color: '#cccccc', opacity: '0.8' });
+			closeAllItem.addEventListener('mouseenter', () => { closeAllItem.style.background = '#094771'; closeAllItem.style.color = '#f48771'; closeAllItem.style.opacity = '1'; });
+			closeAllItem.addEventListener('mouseleave', () => { closeAllItem.style.background = ''; closeAllItem.style.color = '#cccccc'; closeAllItem.style.opacity = '0.8'; });
 			const closeAllIcon = closeAllItem.appendChild($('.claude-session-popup-action-icon'));
 			closeAllIcon.textContent = '\u00D7'; // ×
 			const closeAllLabel = closeAllItem.appendChild($('span'));
