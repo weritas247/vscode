@@ -6,16 +6,42 @@
 .claude-terminal-container {
 	width: 100%;
 	height: 100%;
-	padding: 4px;
+	box-sizing: border-box;
+	position: relative;
+	overflow: hidden;
+}
+
+/* Override the body's overflow:auto which breaks terminal positioning */
+.xlaunchpad-body:has(.claude-terminal-container) {
+	overflow: hidden;
+}
+
+/* Mirror terminal-wrapper styles that VS Code scopes to .terminal-editor / .integrated-terminal */
+.claude-terminal-container .terminal-wrapper {
+	display: block;
+	height: 100%;
 	box-sizing: border-box;
 }
 
-.claude-terminal-container .xterm {
+.claude-terminal-container .terminal-wrapper > .terminal-xterm-host {
 	height: 100%;
+}
+
+.claude-terminal-container .xterm {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
 }
 
 .claude-terminal-container .xterm-viewport {
 	overflow-y: auto;
+	box-sizing: border-box;
+	z-index: 30;
+}
+
+.claude-terminal-container .xterm-screen {
+	z-index: 31;
 }
 
 .claude-terminal-error {

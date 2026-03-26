@@ -85,7 +85,10 @@ export class ClaudeTerminalModal extends XLaunchpadModal {
 			// Attach the terminal's xterm element into our modal container
 			this.terminalInstance.attachToElement(this.terminalContainer);
 
-			// Layout after attach
+			// Mark visible to trigger xterm open/render
+			this.terminalInstance.setVisible(true);
+
+			// Layout after the DOM has been updated
 			requestAnimationFrame(() => {
 				if (this.terminalInstance && this.terminalContainer) {
 					this.terminalInstance.layout({
