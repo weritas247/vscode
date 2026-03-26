@@ -13,7 +13,8 @@ import { KeybindingWeight } from '../../../../platform/keybinding/common/keybind
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
-import { IXLaunchpadService, IClaudeTerminalService } from '../common/xlaunchpad.js';
+import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
+import { IXLaunchpadService, IClaudeTerminalService, claudeTerminalFocusContextKey } from '../common/xlaunchpad.js';
 import { XLaunchpadService } from './xlaunchpadService.js';
 import { ClaudeTerminalService } from './claudeTerminal/claudeTerminalService.js';
 import { XLaunchpadStatusBarContribution } from './statusbar/xlaunchpadStatusBar.js';
@@ -156,5 +157,45 @@ registerAction2(class extends Action2 {
 				getActions: () => actions,
 			});
 		}
+	}
+});
+
+// Close Claude Terminal (Cmd+W when focused)
+registerAction2(class extends Action2 {
+	constructor() {
+		super({
+			id: 'xlaunchpad.closeClaudeTerminal',
+			title: localize2('closeClaudeTerminal', 'Close Claude Terminal'),
+			category: Categories.View,
+			f1: false,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib + 100,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyW,
+				when: ContextKeyExpr.has(claudeTerminalFocusContextKey.key),
+			},
+		});
+	}
+	run(accessor: ServicesAccessor): void {
+		accessor.get(IClaudeTerminalService).closeActiveSession();
+	}
+});
+
+// Minimize Claude Terminal (Cmd+M when focused)
+registerAction2(class extends Action2 {
+	constructor() {
+		super({
+			id: 'xlaunchpad.minimizeClaudeTerminal',
+			title: localize2('minimizeClaudeTerminal', 'Minimize Claude Terminal'),
+			category: Categories.View,
+			f1: false,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib + 100,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyM,
+				when: ContextKeyExpr.has(claudeTerminalFocusContextKey.key),
+			},
+		});
+	}
+	run(accessor: ServicesAccessor): void {
+		accessor.get(IClaudeTerminalService).minimizeActiveSession();
 	}
 });

@@ -4,7 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from '../../../../base/common/event.js';
+import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+
+export const claudeTerminalFocusContextKey = new RawContextKey<boolean>('claudeTerminalFocus', false);
 
 export const IXLaunchpadService = createDecorator<IXLaunchpadService>('xlaunchpadService');
 
@@ -31,6 +34,8 @@ export interface IClaudeTerminalService {
 
 	createSession(): void;
 	closeSession(id: string): void;
+	closeActiveSession(): void;
+	minimizeActiveSession(): void;
 	toggleLastSession(): void;
 	minimizeSession(id: string): void;
 	restoreSession(id: string): void;

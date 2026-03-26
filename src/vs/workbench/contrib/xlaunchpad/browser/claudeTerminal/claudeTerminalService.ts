@@ -6,7 +6,8 @@
 import { Disposable, DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { IClaudeTerminalService, IClaudeTerminalSession } from '../../common/xlaunchpad.js';
+import { IContextKeyService, IContextKey } from '../../../../../platform/contextkey/common/contextkey.js';
+import { IClaudeTerminalService, IClaudeTerminalSession, claudeTerminalFocusContextKey } from '../../common/xlaunchpad.js';
 import { ClaudeTerminalModal } from './claudeTerminalModal.js';
 
 interface IClaudeTerminalSessionInternal extends IClaudeTerminalSession {
@@ -25,11 +26,14 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 	private readonly sessions = new Map<string, IClaudeTerminalSessionInternal>();
 	private sessionCounter = 0;
 	private lastActiveSessionId: string | undefined;
+	private readonly claudeTerminalFocus: IContextKey<boolean>;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
 		super();
+		this.claudeTerminalFocus = claudeTerminalFocusContextKey.bindTo(contextKeyService);
 	}
 
 	createSession(): void {
@@ -55,6 +59,7 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 		this.sessions.set(id, session);
 		this.lastActiveSessionId = id;
 		modal.show();
+		this.claudeTerminalFocus.set(true);
 
 		this._onDidChangeSessionCount.fire(this.sessions.size);
 	}
@@ -74,7 +79,20 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 			this.lastActiveSessionId = remaining.length > 0 ? remaining[remaining.length - 1] : undefined;
 		}
 
+		this.claudeTerminalFocus.set(false);
 		this._onDidChangeSessionCount.fire(this.sessions.size);
+	}
+
+	closeActiveSession(): void {
+		if (this.lastActiveSessionId) {
+			this.closeSession(this.lastActiveSessionId);
+		}
+	}
+
+	minimizeActiveSession(): void {
+		if (this.lastActiveSessionId) {
+			this.minimizeSession(this.lastActiveSessionId);
+		}
 	}
 
 	toggleLastSession(): void {
@@ -103,6 +121,7 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 		}
 		session.modal.hide();
 		session.minimized = true;
+		this.claudeTerminalFocus.set(false);
 		this._onDidChangeSessionCount.fire(this.sessions.size);
 	}
 
@@ -114,6 +133,7 @@ export class ClaudeTerminalService extends Disposable implements IClaudeTerminal
 		session.modal.show();
 		session.minimized = false;
 		this.lastActiveSessionId = id;
+		this.claudeTerminalFocus.set(true);
 		this._onDidChangeSessionCount.fire(this.sessions.size);
 	}
 
