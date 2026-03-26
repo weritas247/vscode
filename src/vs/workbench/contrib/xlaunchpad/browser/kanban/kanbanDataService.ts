@@ -5,6 +5,7 @@
 
 import { Disposable } from '../../../../../base/common/lifecycle.js';
 import { URI } from '../../../../../base/common/uri.js';
+import { VSBuffer } from '../../../../../base/common/buffer.js';
 import { RunOnceScheduler } from '../../../../../base/common/async.js';
 import { IFileService } from '../../../../../platform/files/common/files.js';
 import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
@@ -160,7 +161,7 @@ export class KanbanDataService extends Disposable {
 
 		try {
 			const content = JSON.stringify(this.board, null, 2);
-			await this.fileService.writeFile(this.fileUri, new TextEncoder().encode(content));
+			await this.fileService.writeFile(this.fileUri, VSBuffer.fromString(content));
 		} catch (e) {
 			console.error('[kanban] Failed to save:', e);
 		}

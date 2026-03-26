@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import './claudeMonitorModal.css';
-import { $ } from '../../../../../base/browser/dom.js';
+import { $, clearNode } from '../../../../../base/browser/dom.js';
 import { ILayoutService } from '../../../../../platform/layout/browser/layoutService.js';
 import { IStorageService } from '../../../../../platform/storage/common/storage.js';
 import { IFileService } from '../../../../../platform/files/common/files.js';
@@ -63,12 +63,12 @@ export class ClaudeMonitorModal extends XLaunchpadModal {
 		try {
 			projects = await this.dataService.getUsageSummary();
 		} catch {
-			container.innerHTML = '';
+			clearNode(container);
 			this.renderEmpty(container, 'Failed to read Claude data');
 			return;
 		}
 
-		container.innerHTML = '';
+		clearNode(container);
 
 		if (projects.length === 0) {
 			this.renderEmpty(container, 'No Claude usage data found');
@@ -147,9 +147,9 @@ export class ClaudeMonitorModal extends XLaunchpadModal {
 					for (const session of project.sessions) {
 						const detailRow = document.createElement('tr');
 						detailRow.className = 'claude-monitor-session-detail';
-						detailRow.innerHTML = '';
+						clearNode(detailRow);
 
-						const modelCell = detailRow.appendChild($('td'));
+						const modelCell = detailRow.appendChild($('td')) as HTMLTableCellElement;
 						modelCell.colSpan = 1;
 						modelCell.style.paddingLeft = '24px';
 						const badge = modelCell.appendChild($('span.claude-monitor-session-model'));

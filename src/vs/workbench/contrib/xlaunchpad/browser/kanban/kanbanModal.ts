@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import './kanbanModal.css';
-import { $, addDisposableListener, EventType } from '../../../../../base/browser/dom.js';
+import { $, clearNode } from '../../../../../base/browser/dom.js';
 import { ILayoutService } from '../../../../../platform/layout/browser/layoutService.js';
 import { IStorageService } from '../../../../../platform/storage/common/storage.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
@@ -169,7 +169,7 @@ export class KanbanModal extends XLaunchpadModal {
 	}
 
 	private refreshBoard(container: HTMLElement): void {
-		container.innerHTML = '';
+		clearNode(container);
 		this.renderBoard(container);
 	}
 
@@ -250,7 +250,7 @@ export class KanbanModal extends XLaunchpadModal {
 	}
 
 	private renderEditor(container: HTMLElement, card: IKanbanCard): void {
-		container.innerHTML = '';
+		clearNode(container);
 
 		// Title
 		const titleField = container.appendChild($('.kanban-editor-field'));
@@ -318,7 +318,7 @@ export class KanbanModal extends XLaunchpadModal {
 	}
 
 	private refreshList(container: HTMLElement): void {
-		container.innerHTML = '';
+		clearNode(container);
 		this.renderList(container);
 	}
 }

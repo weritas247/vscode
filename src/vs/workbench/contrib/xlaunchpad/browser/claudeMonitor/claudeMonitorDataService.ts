@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from '../../../../../base/common/uri.js';
-import { IFileService, FileType } from '../../../../../platform/files/common/files.js';
-import { IEnvironmentService } from '../../../../../platform/environment/common/environment.js';
+import { IFileService } from '../../../../../platform/files/common/files.js';
+import { INativeEnvironmentService } from '../../../../../platform/environment/common/environment.js';
 import { IClaudeSession, IClaudeProjectUsage, calculateCost } from '../../common/claudeMonitor.js';
 
 export interface IClaudeFileEntry {
@@ -22,7 +22,7 @@ export class ClaudeMonitorDataService {
 
 	constructor(
 		@IFileService private readonly fileService: IFileService,
-		@IEnvironmentService environmentService: IEnvironmentService,
+		@INativeEnvironmentService environmentService: INativeEnvironmentService,
 	) {
 		this.claudeHomeDir = URI.joinPath(environmentService.userHome, '.claude');
 		this.projectsDir = URI.joinPath(this.claudeHomeDir, 'projects');
@@ -35,15 +35,17 @@ export class ClaudeMonitorDataService {
 		const results: IClaudeProjectUsage[] = [];
 
 		try {
-			const entries = await this.fileService.readdir(this.projectsDir);
-			for (const [name, type] of entries) {
-				if (type !== FileType.Directory) {
-					continue;
-				}
-				const projectDir = URI.joinPath(this.projectsDir, name);
-				const usage = await this.parseProjectUsage(projectDir, name);
-				if (usage) {
-					results.push(usage);
+			const stat = await this.fileService.resolve(this.projectsDir);
+			if (stat.children) {
+				for (const child of stat.children) {
+					if (!child.isDirectory) {
+						continue;
+					}
+					const name = child.name;
+					const usage = await this.parseProjectUsage(child.resource, name);
+					if (usage) {
+						results.push(usage);
+					}
 				}
 			}
 		} catch {
@@ -62,14 +64,14 @@ export class ClaudeMonitorDataService {
 		const sessions: IClaudeSession[] = [];
 
 		try {
-			const files = await this.fileService.readdir(projectDir);
-			const jsonlFiles = files
-				.filter(([name, type]) => type === FileType.File && name.endsWith('.jsonl'))
-				.map(([name]) => name);
+			const stat = await this.fileService.resolve(projectDir);
+			const jsonlChildren = (stat.children ?? [])
+				.filter(child => child.isFile && child.name.endsWith('.jsonl'));
 
-			for (const filename of jsonlFiles) {
-				const fileUri = URI.joinPath(projectDir, filename);
+			for (const child of jsonlChildren) {
+				const filename = child.name;
 				try {
+					const fileUri = child.resource;
 					const content = await this.fileService.readFile(fileUri);
 					const text = new TextDecoder().decode(content.value.buffer);
 					const session = this.parseJsonlFile(text, filename.replace('.jsonl', ''));
@@ -165,28 +167,28 @@ export class ClaudeMonitorDataService {
 
 		const entries: IClaudeFileEntry[] = [];
 		try {
-			const items = await this.fileService.readdir(dir);
+			const stat = await this.fileService.resolve(dir);
+			const children = [...(stat.children ?? [])];
 			// Sort: directories first, then alphabetical
-			items.sort(([aName, aType], [bName, bType]) => {
-				if (aType === FileType.Directory && bType !== FileType.Directory) {
+			children.sort((a, b) => {
+				if (a.isDirectory && !b.isDirectory) {
 					return -1;
 				}
-				if (aType !== FileType.Directory && bType === FileType.Directory) {
+				if (!a.isDirectory && b.isDirectory) {
 					return 1;
 				}
-				return aName.localeCompare(bName);
+				return a.name.localeCompare(b.name);
 			});
 
-			for (const [name, type] of items) {
-				if (name.startsWith('.')) {
+			for (const child of children) {
+				if (child.name.startsWith('.')) {
 					continue; // skip hidden files
 				}
-				const childUri = URI.joinPath(dir, name);
-				if (type === FileType.Directory) {
-					const children = await this.readDirRecursive(childUri, maxDepth - 1);
-					entries.push({ name, path: childUri, type: 'directory', children });
+				if (child.isDirectory) {
+					const subChildren = await this.readDirRecursive(child.resource, maxDepth - 1);
+					entries.push({ name: child.name, path: child.resource, type: 'directory', children: subChildren });
 				} else {
-					entries.push({ name, path: childUri, type: 'file' });
+					entries.push({ name: child.name, path: child.resource, type: 'file' });
 				}
 			}
 		} catch {

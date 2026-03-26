@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import './xlaunchpadModal.css';
-import { $, addDisposableListener, EventType, getWindow } from '../../../../../base/browser/dom.js';
+import { $, addDisposableListener, clearNode, EventType, getWindow } from '../../../../../base/browser/dom.js';
 import { StandardKeyboardEvent } from '../../../../../base/browser/keyboardEvent.js';
 import { Disposable, DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { KeyCode } from '../../../../../base/common/keyCodes.js';
@@ -220,7 +220,7 @@ export abstract class XLaunchpadModal extends Disposable {
 
 		// Re-render body
 		if (this.body) {
-			this.body.innerHTML = '';
+			clearNode(this.body);
 			this.renderTabContent(tabId, this.body);
 		}
 

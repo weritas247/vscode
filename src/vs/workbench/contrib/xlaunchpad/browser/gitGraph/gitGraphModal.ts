@@ -4,7 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import './gitGraphModal.css';
-import { $, addDisposableListener, EventType } from '../../../../../base/browser/dom.js';
+import { $, clearNode } from '../../../../../base/browser/dom.js';
+import { createTrustedTypesPolicy } from '../../../../../base/browser/trustedTypes.js';
 import { StandardKeyboardEvent } from '../../../../../base/browser/keyboardEvent.js';
 import { KeyCode } from '../../../../../base/common/keyCodes.js';
 import { ILayoutService } from '../../../../../platform/layout/browser/layoutService.js';
@@ -14,6 +15,8 @@ import { XLaunchpadModal, IXLaunchpadTab } from '../modal/xlaunchpadModal.js';
 import { XLaunchpadModalId } from '../../common/xlaunchpad.js';
 import { GitGraphDataService, ICommitEntry, IGitStatusFile } from './gitGraphDataService.js';
 
+const ttPolicy = createTrustedTypesPolicy('gitGraphModal', { createHTML: value => value });
+
 export class GitGraphModal extends XLaunchpadModal {
 
 	private dataService: GitGraphDataService;
@@ -21,7 +24,6 @@ export class GitGraphModal extends XLaunchpadModal {
 	private selectedHash: string | undefined;
 	private focusedIdx = -1;
 	private searchQuery = '';
-	private selectedStatusFile: string | undefined;
 
 	constructor(
 		@ILayoutService layoutService: ILayoutService,
@@ -108,7 +110,7 @@ export class GitGraphModal extends XLaunchpadModal {
 		try {
 			const { commits } = await this.dataService.getCommits(200);
 			this.commits = commits;
-			graphContainer.innerHTML = '';
+			clearNode(graphContainer);
 
 			if (commits.length === 0) {
 				const empty = graphContainer.appendChild($('.git-graph-empty'));
@@ -120,7 +122,7 @@ export class GitGraphModal extends XLaunchpadModal {
 			this.renderCommitGraph(graphContainer, commits);
 			container.focus();
 		} catch {
-			graphContainer.innerHTML = '';
+			clearNode(graphContainer);
 			const empty = graphContainer.appendChild($('.git-graph-empty'));
 			empty.appendChild($('.git-graph-empty-icon')).textContent = '\u26A0';
 			empty.appendChild($('div')).textContent = 'Failed to load git log';
@@ -140,7 +142,7 @@ export class GitGraphModal extends XLaunchpadModal {
 	}
 
 	private renderCommitGraph(container: HTMLElement, commits: ICommitEntry[]): void {
-		container.innerHTML = '';
+		clearNode(container);
 
 		const scroll = container.appendChild($('.git-graph-scroll'));
 		const { positions, svgWidth } = this.dataService.computeLayout(commits);
@@ -148,7 +150,8 @@ export class GitGraphModal extends XLaunchpadModal {
 
 		// SVG graph
 		const svgCol = scroll.appendChild($('.git-graph-svg-col'));
-		svgCol.innerHTML = this.dataService.buildSvg(commits, positions, svgWidth, totalHeight);
+		const svgHtml = this.dataService.buildSvg(commits, positions, svgWidth, totalHeight);
+		svgCol.innerHTML = (ttPolicy?.createHTML(svgHtml) ?? svgHtml) as string;
 
 		// Commit rows
 		const commitsEl = scroll.appendChild($('.git-graph-commits'));
@@ -289,7 +292,7 @@ export class GitGraphModal extends XLaunchpadModal {
 
 		try {
 			const files = await this.dataService.getStatus();
-			filesPane.innerHTML = '';
+			clearNode(filesPane);
 
 			if (files.length === 0) {
 				filesPane.appendChild($('div')).textContent = 'Working tree clean';
@@ -311,7 +314,7 @@ export class GitGraphModal extends XLaunchpadModal {
 			// Update tab badge
 			this.updateTabBadge('status', files.length);
 		} catch {
-			filesPane.innerHTML = '';
+			clearNode(filesPane);
 			filesPane.appendChild($('div')).textContent = 'Failed to load git status';
 		}
 	}
@@ -336,12 +339,10 @@ export class GitGraphModal extends XLaunchpadModal {
 				// Update selection
 				parent.querySelectorAll('.git-status-file').forEach(el => el.classList.remove('active'));
 				item.classList.add('active');
-				this.selectedStatusFile = file.path;
-
 				// Load diff
 				diffPane.textContent = 'Loading diff...';
 				const diff = await this.dataService.getDiff(file.path, file.staged);
-				diffPane.innerHTML = '';
+				clearNode(diffPane);
 				if (diff) {
 					this.renderDiff(diffPane, diff);
 				} else {

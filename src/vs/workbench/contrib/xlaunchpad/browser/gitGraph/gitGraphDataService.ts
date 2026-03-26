@@ -3,11 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as cp from 'child_process';
-import { promisify } from 'util';
+import { CancellationTokenSource } from '../../../../../base/common/cancellation.js';
+import { ISCMService, ISCMRepository } from '../../../scm/common/scm.js';
+import { ISCMHistoryProvider, ISCMHistoryItem } from '../../../scm/common/history.js';
 import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
-
-const execFileAsync = promisify(cp.execFile);
 
 export interface ICommitEntry {
 	hash: string;
@@ -50,184 +49,125 @@ const PAD_X = 12;
 export class GitGraphDataService {
 
 	constructor(
+		@ISCMService private readonly scmService: ISCMService,
 		@IWorkspaceContextService private readonly workspaceService: IWorkspaceContextService,
-	) {}
+	) { }
 
-	private getCwd(): string | undefined {
+	private getRepository(): { repo: ISCMRepository; historyProvider: ISCMHistoryProvider } | undefined {
 		const folders = this.workspaceService.getWorkspace().folders;
-		return folders.length > 0 ? folders[0].uri.fsPath : undefined;
+		if (folders.length === 0) {
+			return undefined;
+		}
+
+		for (const repo of this.scmService.repositories) {
+			const provider = repo.provider;
+			if (provider.providerId !== 'git') {
+				continue;
+			}
+			const historyProvider = provider.historyProvider.get();
+			if (historyProvider) {
+				return { repo, historyProvider };
+			}
+		}
+
+		return undefined;
 	}
 
-	async getCommits(maxCount = 50, skip = 0): Promise<{ commits: ICommitEntry[]; hasMore: boolean }> {
-		const cwd = this.getCwd();
-		if (!cwd) {
+	async getCommits(maxCount = 50, _skip = 0): Promise<{ commits: ICommitEntry[]; hasMore: boolean }> {
+		const entry = this.getRepository();
+		if (!entry) {
 			return { commits: [], hasMore: false };
 		}
 
-		const fetchCount = maxCount + 1;
+		const { historyProvider } = entry;
+		const cts = new CancellationTokenSource();
+
 		try {
-			const { stdout: raw } = await execFileAsync(
-				'git',
-				[
-					'log',
-					'--format=%H%x00%P%x00%D%x00%an%x00%aI%x00%s%x01',
-					`--max-count=${fetchCount}`,
-					`--skip=${skip}`,
-					'--topo-order',
-					'--all',
-				],
-				{ cwd, encoding: 'utf-8', timeout: 10000 }
+			const items = await historyProvider.provideHistoryItems(
+				{ limit: maxCount + 1 },
+				cts.token,
 			);
 
-			const allCommits = raw
-				.trim()
-				.split('\x01')
-				.filter(Boolean)
-				.map((record) => {
-					const [hash, parentStr, refStr, author, date, message] = record.trim().split('\x00');
-					return {
-						hash,
-						parents: parentStr ? parentStr.split(' ').filter(Boolean) : [],
-						refs: refStr ? refStr.split(', ').map(r => r.trim()).filter(Boolean) : [],
-						author,
-						date,
-						message,
-						additions: 0,
-						deletions: 0,
-					};
-				});
+			if (!items) {
+				return { commits: [], hasMore: false };
+			}
 
-			const hasMore = allCommits.length > maxCount;
-			const commits = hasMore ? allCommits.slice(0, maxCount) : allCommits;
+			const hasMore = items.length > maxCount;
+			const slice = hasMore ? items.slice(0, maxCount) : items;
 
-			// Fetch stats in background (optional, non-blocking)
-			this.fetchStats(cwd, commits, fetchCount, skip).catch(() => {});
-
+			const commits: ICommitEntry[] = slice.map(item => this.toCommitEntry(item));
 			return { commits, hasMore };
 		} catch {
 			return { commits: [], hasMore: false };
+		} finally {
+			cts.dispose();
 		}
 	}
 
-	private async fetchStats(cwd: string, commits: ICommitEntry[], fetchCount: number, skip: number): Promise<void> {
-		try {
-			const { stdout: statsRaw } = await execFileAsync(
-				'git',
-				[
-					'log',
-					'--format=%H',
-					'--shortstat',
-					`--max-count=${fetchCount}`,
-					`--skip=${skip}`,
-					'--topo-order',
-					'--all',
-				],
-				{ cwd, encoding: 'utf-8', timeout: 10000 }
-			);
-
-			const statsMap = new Map<string, { additions: number; deletions: number }>();
-			let currentHash = '';
-			for (const line of statsRaw.trim().split('\n')) {
-				const trimmed = line.trim();
-				if (!trimmed) {
-					continue;
-				}
-				if (/^[0-9a-f]{40}$/.test(trimmed)) {
-					currentHash = trimmed;
-				} else if (currentHash && /file.* changed/.test(trimmed)) {
-					let additions = 0, deletions = 0;
-					const addMatch = trimmed.match(/(\d+) insertion/);
-					const delMatch = trimmed.match(/(\d+) deletion/);
-					if (addMatch) {
-						additions = parseInt(addMatch[1]);
-					}
-					if (delMatch) {
-						deletions = parseInt(delMatch[1]);
-					}
-					statsMap.set(currentHash, { additions, deletions });
-					currentHash = '';
-				}
+	private toCommitEntry(item: ISCMHistoryItem): ICommitEntry {
+		const refs: string[] = [];
+		if (item.references) {
+			for (const ref of item.references) {
+				refs.push(ref.name);
 			}
-
-			for (const c of commits) {
-				const s = statsMap.get(c.hash);
-				if (s) {
-					c.additions = s.additions;
-					c.deletions = s.deletions;
-				}
-			}
-		} catch {
-			// Stats are optional
 		}
+
+		return {
+			hash: item.id,
+			parents: item.parentIds ?? [],
+			refs,
+			author: item.author ?? '',
+			date: item.timestamp ? new Date(item.timestamp).toISOString() : '',
+			message: item.subject ?? item.message ?? '',
+			additions: item.statistics?.insertions ?? 0,
+			deletions: item.statistics?.deletions ?? 0,
+		};
 	}
 
 	async getStatus(): Promise<IGitStatusFile[]> {
-		const cwd = this.getCwd();
-		if (!cwd) {
+		const entry = this.getRepository();
+		if (!entry) {
 			return [];
 		}
 
-		try {
-			const { stdout } = await execFileAsync(
-				'git',
-				['status', '--porcelain=v1'],
-				{ cwd, encoding: 'utf-8', timeout: 5000 }
-			);
-
-			return stdout
-				.trim()
-				.split('\n')
-				.filter(Boolean)
-				.map(line => {
-					const index = line[0];
-					const work = line[1];
-					const path = line.substring(3);
-					const staged = index !== ' ' && index !== '?';
-					const status = staged ? index : work;
-					return { status, path, staged };
+		// Use SCM resource groups to get status
+		const files: IGitStatusFile[] = [];
+		for (const group of entry.repo.provider.groups) {
+			const staged = group.id === 'index';
+			for (const resource of group.resources) {
+				const status = staged ? 'M' : (group.id === 'untracked' ? '?' : 'M');
+				files.push({
+					status,
+					path: resource.sourceUri.fsPath,
+					staged,
 				});
-		} catch {
-			return [];
+			}
 		}
+
+		return files;
 	}
 
 	async getDiff(filePath: string, staged: boolean): Promise<string> {
-		const cwd = this.getCwd();
-		if (!cwd) {
+		const entry = this.getRepository();
+		if (!entry) {
 			return '';
 		}
 
-		try {
-			const args = staged
-				? ['diff', '--cached', '--', filePath]
-				: ['diff', '--', filePath];
-			const { stdout } = await execFileAsync('git', args, {
-				cwd,
-				encoding: 'utf-8',
-				timeout: 5000,
-			});
-			return stdout;
-		} catch {
-			return '';
-		}
+		// Diffs are not directly available via SCM service in a simple text form.
+		// For now, return empty. The diff viewer in VS Code handles this through editors.
+		void filePath;
+		void staged;
+		return '';
 	}
 
 	async getCurrentBranch(): Promise<string> {
-		const cwd = this.getCwd();
-		if (!cwd) {
+		const entry = this.getRepository();
+		if (!entry) {
 			return '';
 		}
 
-		try {
-			const { stdout } = await execFileAsync(
-				'git',
-				['branch', '--show-current'],
-				{ cwd, encoding: 'utf-8', timeout: 3000 }
-			);
-			return stdout.trim();
-		} catch {
-			return '';
-		}
+		const ref = entry.historyProvider.historyItemRef.get();
+		return ref?.name ?? '';
 	}
 
 	// ─── Graph Layout Computation ───────────────────────
