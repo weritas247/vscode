@@ -1,4 +1,10 @@
-# VS Code Copilot Instructions
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Purpose
+
+This project is a custom editor built on top of open-source VS Code. The goal is to create an AI-powered code generation and project development tool. The editor leverages AI to assist users in generating code, scaffolding projects, and streamlining the entire development workflow.
 
 ## Project Overview
 
