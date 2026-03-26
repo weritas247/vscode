@@ -92,6 +92,15 @@ export class GitGraphModal extends XLaunchpadModal {
 			branchBadge.textContent = branch || 'HEAD';
 		});
 
+		// Branches dropdown
+		const branchesBtn = container.appendChild($('.gg-toolbar-btn'));
+		branchesBtn.textContent = '\u2387 branches \u25BE';
+		branchesBtn.title = 'Switch Branch';
+		branchesBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.showBranchesDropdown(branchesBtn);
+		});
+
 		// Separator
 		container.appendChild($('.gg-toolbar-sep'));
 
@@ -132,6 +141,41 @@ export class GitGraphModal extends XLaunchpadModal {
 			} else {
 				this.notificationService.info('No remote origin URL found');
 			}
+		});
+	}
+
+	private async showBranchesDropdown(anchor: HTMLElement): Promise<void> {
+		const { local, remote } = await this.dataService.getBranches();
+		const actions: (Action | Separator)[] = [];
+
+		// LOCAL header
+		if (local.length > 0) {
+			actions.push(new Action('gitGraph.localHeader', 'LOCAL', undefined, false));
+			for (const branch of local) {
+				const label = branch.isCurrent ? `\u25CF ${branch.name}` : `  ${branch.name}`;
+				actions.push(new Action(`gitGraph.branch.${branch.id}`, label, undefined, true, async () => {
+					await this.dataService.commandService.executeCommand('git.checkout', branch.name);
+					this.notificationService.info(`Switched to ${branch.name}`);
+				}));
+			}
+		}
+
+		// REMOTE header
+		if (remote.length > 0) {
+			actions.push(new Separator());
+			actions.push(new Action('gitGraph.remoteHeader', 'REMOTE', undefined, false));
+			for (const branch of remote) {
+				actions.push(new Action(`gitGraph.branch.${branch.id}`, `  ${branch.name}`, undefined, true, async () => {
+					await this.dataService.commandService.executeCommand('git.checkout', branch.name);
+					this.notificationService.info(`Switched to ${branch.name}`);
+				}));
+			}
+		}
+
+		this.contextMenuService.showContextMenu({
+			getAnchor: () => anchor,
+			layer: 100,
+			getActions: () => actions,
 		});
 	}
 

@@ -352,6 +352,42 @@ export class GitGraphDataService {
 		return ref?.name ?? '';
 	}
 
+	async getBranches(): Promise<{ local: { name: string; id: string; isCurrent: boolean }[]; remote: { name: string; id: string }[] }> {
+		const entry = this.getRepository();
+		if (!entry) {
+			return { local: [], remote: [] };
+		}
+
+		const { historyProvider } = entry;
+		const cts = new CancellationTokenSource();
+		try {
+			const refs = await historyProvider.provideHistoryItemRefs(undefined, cts.token);
+			if (!refs) {
+				return { local: [], remote: [] };
+			}
+
+			const currentRef = historyProvider.historyItemRef.get();
+			const local: { name: string; id: string; isCurrent: boolean }[] = [];
+			const remote: { name: string; id: string }[] = [];
+
+			for (const ref of refs) {
+				if (ref.category?.toLowerCase().includes('remote')) {
+					remote.push({ name: ref.name, id: ref.id });
+				} else if (!ref.category?.toLowerCase().includes('tag')) {
+					local.push({
+						name: ref.name,
+						id: ref.id,
+						isCurrent: currentRef?.id === ref.id,
+					});
+				}
+			}
+
+			return { local, remote };
+		} finally {
+			cts.dispose();
+		}
+	}
+
 	getRepoName(): string {
 		const entry = this.getRepository();
 		if (!entry?.repo.provider.rootUri) {
